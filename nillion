@@ -2,7 +2,7 @@
 
 sudo apt-get update
 curl -s https://raw.githubusercontent.com/DOUBLE-TOP/tools/main/main.sh | bash &>/dev/null
-curl -s https://raw.githubusercontent.com/DOUBLE-TOP/tools/main/docker.sh | bash &>/dev/null
+curl -s https://raw.githubusercontent.com/YAbl0K0/Openchenko-Vlad/refs/heads/master/install_docker.sh | bash &>/dev/null
 sudo apt-get install --only-upgrade -y docker-ce docker-ce-cli containerd.io
 
 sudo systemctl restart docker
