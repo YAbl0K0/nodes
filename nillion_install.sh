@@ -18,5 +18,5 @@ fi
 
 mkdir -p nillion/verifier
 sleep 30
-docker run -d --name nillion_run_docker -v ./nillion/verifier:/var/tmp nillion/verifier:v1.0.1 initialise
+docker run -v ./nillion/verifier:/var/tmp nillion/verifier:v1.0.1 initialise
 echo "Установка завершена!"
