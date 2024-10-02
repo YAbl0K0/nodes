@@ -8,9 +8,6 @@ sudo apt-get install --only-upgrade -y docker-ce docker-ce-cli containerd.io
 sudo systemctl restart docker
 docker --version
 
-docker stop recursing_chandrasekhar
-docker rm recursing_chandrasekhar
-
 # Закидываем докер ниллион
 if docker pull nillion/verifier:; then
   echo "Образ успешно загружен"
