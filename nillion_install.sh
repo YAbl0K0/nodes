@@ -9,7 +9,7 @@ sudo systemctl restart docker
 docker --version
 
 # Закидываем докер ниллион
-if docker pull nillion/verifier:; then
+if docker pull nillion/verifier:v1.0.1; then
   echo "Образ успешно загружен"
 else
   echo "Ошибка загрузки образа" >&2
@@ -18,5 +18,5 @@ fi
 
 mkdir -p nillion/verifier
 sleep 30
-docker run -v ./nillion/verifier:/var/tmp nillion/verifier: initialise
+docker run -v ./nillion/verifier:/var/tmp nillion/verifier:v1.0.1 initialise
 echo "Установка завершена!"
