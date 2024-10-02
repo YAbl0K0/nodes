@@ -8,6 +8,15 @@ sudo apt-get install --only-upgrade -y docker-ce docker-ce-cli containerd.io
 sudo systemctl restart docker
 docker --version
 
+# Останавливаем предыдущий докер
+if docker stop recursing_chandrasekhar; then
+  echo "Предыдущий образ успешно остановлен"
+else
+  echo "Ошибка загрузки образа" >&2
+  exit 1
+fi
+docker rm recursing_chandrasekhar
+
 # Закидываем докер ниллион
 if docker pull nillion/verifier:; then
   echo "Образ успешно загружен"
