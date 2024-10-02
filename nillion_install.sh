@@ -8,6 +8,8 @@ sudo apt-get install --only-upgrade -y docker-ce docker-ce-cli containerd.io
 sudo systemctl restart docker
 docker --version
 
+docker rm $(docker ps -a -q --filter ancestor=nillion/verifier:v1.0.1)
+
 # Закидываем докер ниллион
 if docker pull nillion/verifier:v1.0.1; then
   echo "Образ успешно загружен"
