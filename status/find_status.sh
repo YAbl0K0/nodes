@@ -9,33 +9,42 @@ if [ -z "$REPORT_FILENAME" ]; then
   exit 1
 fi
 
+# Путь, который нужно проверить
+TARGET_PATH="$HOME/root"
+
+# Проверка, что указанный путь существует
+if [ ! -d "$TARGET_PATH" ]; then
+  echo "Error: Path $TARGET_PATH does not exist."
+  exit 1
+fi
+
 # Параметры
 NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
-REPORT_FILE="$REPO_PATH/$REPORT_FILENAME"
+REPORT_FILE="./$REPORT_FILENAME"  # Сохраняем отчет в текущей директории
 
-# Сбор всех директорий в руте
-ROOT_DIRS=$(ls -d /*/ | sed 's:/*$::' | xargs -n 1 basename)
+# Сбор всех файлов и директорий в $HOME/root
+ITEMS=$(ls "$TARGET_PATH")
 
-# Массивы для классификации директорий
+# Массивы для классификации элементов
 TO_KEEP=()
 TO_REMOVE=()
 UNKNOWN=()
 
-# Функция для анализа директорий
-analyze_dirs() {
-  for dir in $ROOT_DIRS; do
-    if [[ " ${NECESSARY_DIRS[@]} " =~ " $dir " ]]; then
-      TO_KEEP+=("$dir")
-    elif [[ "$dir" == "lost+found" ]]; then
-      UNKNOWN+=("$dir")
+# Функция для анализа элементов
+analyze_items() {
+  for item in $ITEMS; do
+    if [[ " ${NECESSARY_DIRS[@]} " =~ " $item " ]]; then
+      TO_KEEP+=("$item")
+    elif [[ "$item" == "lost+found" ]]; then
+      UNKNOWN+=("$item")
     else
-      TO_REMOVE+=("$dir")
+      TO_REMOVE+=("$item")
     fi
   done
 }
 
-# Анализируем директории
-analyze_dirs
+# Анализируем файлы и папки
+analyze_items
 
 # Запись отчета в файл
 {
@@ -43,4 +52,7 @@ analyze_dirs
   echo "TO_REMOVE: $(IFS=';'; echo "${TO_REMOVE[*]}")"
   echo "UNKNOWN: $(IFS=';'; echo "${UNKNOWN[*]}")"
 } > "$REPORT_FILE"
+
+# Сообщение об успешной записи отчета
+echo "Report saved to $REPORT_FILE"
 
