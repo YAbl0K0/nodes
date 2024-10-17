@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Запрос имени файла у пользователя
-read -p "Введите имя файла (пример: report.txt): " REPORT_FILENAME
+read -p "Введите имя файла для отчета (пример: report.txt): " REPORT_FILENAME
 
 # Проверка, что имя файла не пустое
 if [ -z "$REPORT_FILENAME" ]; then
@@ -9,27 +9,12 @@ if [ -z "$REPORT_FILENAME" ]; then
   exit 1
 fi
 
-# Указываем путь, который нужно проверить
-TARGET_PATH="$HOME/root"
-
-# Отладка: выводим значение переменной TARGET_PATH
-echo "Проверяем путь: $TARGET_PATH"
-
-# Проверка, что указанный путь существует
-if [ ! -d "$TARGET_PATH" ]; then
-  echo "Ошибка: Путь $TARGET_PATH не существует или недоступен."
-  exit 1
-fi
-
 # Параметры
-NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
+NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
 REPORT_FILE="./$REPORT_FILENAME"  # Сохраняем отчет в текущей директории
 
-# Сбор всех файлов и директорий в указанном пути
-ITEMS=$(ls "$TARGET_PATH")
-
-# Отладка: выводим, какие элементы нашлись
-echo "Найденные элементы: $ITEMS"
+# Сбор всех файлов и папок в текущей директории
+ITEMS=$(ls)
 
 # Массивы для классификации элементов
 TO_KEEP=()
