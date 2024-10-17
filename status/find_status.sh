@@ -9,9 +9,6 @@ if [ -z "$REPORT_FILENAME" ]; then
   exit 1
 fi
 
-# Путь, который нужно проверить
-TARGET_PATH="$HOME/root"
-
 # Параметры
 NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
 REPORT_FILE="./$REPORT_FILENAME"  # Сохраняем отчет в текущей директории
