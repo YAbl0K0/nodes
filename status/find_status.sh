@@ -9,8 +9,11 @@ if [ -z "$REPORT_FILENAME" ]; then
   exit 1
 fi
 
-# Путь, который нужно проверить
+# Указываем путь, который нужно проверить
 TARGET_PATH="$HOME/root"
+
+# Отладка: выводим значение переменной TARGET_PATH
+echo "Проверяем путь: $TARGET_PATH"
 
 # Проверка, что указанный путь существует
 if [ ! -d "$TARGET_PATH" ]; then
@@ -22,8 +25,11 @@ fi
 NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
 REPORT_FILE="./$REPORT_FILENAME"  # Сохраняем отчет в текущей директории
 
-# Сбор всех файлов и директорий в $HOME/root
+# Сбор всех файлов и директорий в указанном пути
 ITEMS=$(ls "$TARGET_PATH")
+
+# Отладка: выводим, какие элементы нашлись
+echo "Найденные элементы: $ITEMS"
 
 # Массивы для классификации элементов
 TO_KEEP=()
