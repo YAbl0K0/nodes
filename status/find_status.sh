@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Запрос имени файла у пользователя
-read -p "Enter the name for the report file (e.g., report.txt): " REPORT_FILENAME
+read -p "Введите имя файла (пример: Влад.txt): " REPORT_FILENAME
 
 # Проверка, что имя файла не пустое
 if [ -z "$REPORT_FILENAME" ]; then
@@ -11,12 +11,6 @@ fi
 
 # Путь, который нужно проверить
 TARGET_PATH="$HOME/root"
-
-# Проверка, что указанный путь существует
-if [ ! -d "$TARGET_PATH" ]; then
-  echo "Error: Path $TARGET_PATH does not exist."
-  exit 1
-fi
 
 # Параметры
 NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
