@@ -10,7 +10,8 @@ if [ -z "$REPORT_FILENAME" ]; then
 fi
 
 # Параметры
-NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
+NECESSARY_ITEMS=("0.9.3.tar.gz" "BeraMachine" "hubble" "star_labs" "zabbix-release_6.4-1+ubuntu20.04_all.deb.1")
+UNNECESSARY_ITEMS=("0.9.3.tar.gz.1" "bevm" "infernet-container-starter" "start.sh" "zabbix-release_6.4-1+ubuntu20.04_all.deb.10")
 REPORT_FILE="./$REPORT_FILENAME"  # Сохраняем отчет в текущей директории
 
 # Сбор всех файлов и папок в текущей директории
@@ -24,12 +25,12 @@ UNKNOWN=()
 # Функция для анализа элементов
 analyze_items() {
   for item in $ITEMS; do
-    if [[ " ${NECESSARY_DIRS[@]} " =~ " $item " ]]; then
+    if [[ " ${NECESSARY_ITEMS[@]} " =~ " $item " ]]; then
       TO_KEEP+=("$item")
-    elif [[ "$item" == "lost+found" ]]; then
-      UNKNOWN+=("$item")
-    else
+    elif [[ " ${UNNECESSARY_ITEMS[@]} " =~ " $item " ]]; then
       TO_REMOVE+=("$item")
+    else
+      UNKNOWN+=("$item")
     fi
   done
 }
