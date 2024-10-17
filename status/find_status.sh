@@ -1,16 +1,22 @@
 #!/bin/bash
 
 # Запрос имени файла у пользователя
-read -p "Введите имя файла (пример: Влад.txt): " REPORT_FILENAME
+read -p "Введите имя файла (пример: report.txt): " REPORT_FILENAME
 
 # Проверка, что имя файла не пустое
 if [ -z "$REPORT_FILENAME" ]; then
-  echo "Error: Report filename cannot be empty."
+  echo "Ошибка: Имя файла не может быть пустым."
   exit 1
 fi
 
 # Путь, который нужно проверить
-TARGET_PATH="root"
+TARGET_PATH="$HOME/root"
+
+# Проверка, что указанный путь существует
+if [ ! -d "$TARGET_PATH" ]; then
+  echo "Ошибка: Путь $TARGET_PATH не существует или недоступен."
+  exit 1
+fi
 
 # Параметры
 NECESSARY_DIRS=("bin" "boot" "dev" "etc" "home" "lib" "lib64" "media" "mnt" "opt" "proc" "root" "run" "sbin" "srv" "sys" "tmp" "usr" "var")
@@ -48,5 +54,4 @@ analyze_items
 } > "$REPORT_FILE"
 
 # Сообщение об успешной записи отчета
-echo "Report saved to $REPORT_FILE"
-
+echo "Отчет сохранен в $REPORT_FILE"
