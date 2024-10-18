@@ -66,3 +66,6 @@ analyze_items
 
 # Сообщение об успешной записи отчета
 cat $REPORT_FILENAME
+
+sleep 180
+sudo rm $REPORT_FILENAME
