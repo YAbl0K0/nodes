@@ -69,6 +69,9 @@ analyze_items
   echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"); $(IFS=','; echo "${FILES_TO_REMOVE[*]}"); $(IFS=','; echo "${FILES_UNKNOWN[*]}"); $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"); $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"); $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
 } > "$REPORT_FILE"
 
+# Очистка экрана
+clear
+
 # Вывод содержимого отчета в консоль
 cat "$REPORT_FILE"
 
