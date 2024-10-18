@@ -40,7 +40,7 @@ analyze_containers
 
 # Запись отчета в файл в одну строку
 {
-   echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"), $(IFS=','; echo "${FILES_TO_REMOVE[*]}"), $(IFS=','; echo "${FILES_UNKNOWN[*]}"), $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"), $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"), $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
-
+   echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"); $(IFS=','; echo "${FILES_TO_REMOVE[*]}"); $(IFS=','; echo "${FILES_UNKNOWN[*]}"); $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"); $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"); $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
+} > "$REPORT_FILE"
 # Сообщение об успешной записи отчета
 echo "Отчет о Docker-контейнерах сохранен в $REPORT_FILE"
