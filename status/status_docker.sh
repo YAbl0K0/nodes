@@ -64,8 +64,16 @@ analyze_items
   echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"); $(IFS=','; echo "${FILES_TO_REMOVE[*]}"); $(IFS=','; echo "${FILES_UNKNOWN[*]}"); $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"); $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"); $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
 } > "$REPORT_FILE"
 
-# Сообщение об успешной записи отчета
-cat $REPORT_FILENAME
+# Запись отчета в файл в одну строку
+{
+  echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"); $(IFS=','; echo "${FILES_TO_REMOVE[*]}"); $(IFS=','; echo "${FILES_UNKNOWN[*]}"); $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"); $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"); $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
+} > "$REPORT_FILE"
 
+# Вывод содержимого отчета в консоль
+cat "$REPORT_FILE"
+
+# Ожидание 180 секунд перед удалением файла
 sleep 180
-sudo rm $REPORT_FILENAME
+
+# Удаление отчета с правами sudo
+sudo rm "$REPORT_FILE"
