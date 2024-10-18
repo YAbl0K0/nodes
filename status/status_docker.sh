@@ -82,6 +82,3 @@ clear
 
 # Удаление отчета с правами sudo
 sudo rm "$REPORT_FILE"
-
-# Сообщение о завершении
-echo "Отчет удален: $REPORT_FILE"
