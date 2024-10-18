@@ -65,4 +65,4 @@ analyze_items
 } > "$REPORT_FILE"
 
 # Сообщение об успешной записи отчета
-echo "Отчет о Docker-контейнерах сохранен в $REPORT_FILE"
+cat $REPORT_FILENAME
