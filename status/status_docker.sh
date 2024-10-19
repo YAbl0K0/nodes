@@ -1,6 +1,7 @@
 #!/bin/bash
 
 clear
+# Актуально на 19.10.2024
 
 # Автоматическое создание имени файла отчета с текущей датой и временем
 REPORT_FILENAME="docker_report_$(date '+%Y-%m-%d_%H-%M-%S').txt"
@@ -60,11 +61,6 @@ analyze_items() {
 # Выполнение анализа
 analyze_containers
 analyze_items
-
-# Запись отчета в файл в одну строку
-{
-  echo "$(date '+%Y-%m-%d'); $(IFS=','; echo "${FILES_TO_KEEP[*]}"); $(IFS=','; echo "${FILES_TO_REMOVE[*]}"); $(IFS=','; echo "${FILES_UNKNOWN[*]}"); $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"); $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"); $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
-} > "$REPORT_FILE"
 
 # Запись отчета в файл в одну строку
 {
