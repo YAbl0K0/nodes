@@ -1,7 +1,7 @@
 #!/bin/bash
 
 mkdir -p evd_addr && cd evd_addr
-python3 -m venv venv
+python3 -m venv
 
 source venv/bin/activate
 
