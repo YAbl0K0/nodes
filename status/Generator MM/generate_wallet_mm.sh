@@ -1,12 +1,21 @@
 #!/bin/bash
 
-mkdir -p evd_addr && cd evd_addr
-python3 -m venv
+# Обработка ошибок: если что-то идёт не так, скрипт завершится
+set -e
 
+# Создаём и переходим в директорию для виртуального окружения
+mkdir -p evd_addr && cd evd_addr
+
+# Создаём виртуальное окружение
+python3 -m venv venv
+
+# Активируем виртуальное окружение
 source venv/bin/activate
 
-pip install eth-account
+# Устанавливаем библиотеку для генерации кошельков
+pip install --quiet eth-account
 
+# Создаём Python-скрипт для генерации кошельков
 cat << EOF > wallets.py
 from eth_account import Account
 from eth_account.hdaccount import generate_mnemonic
