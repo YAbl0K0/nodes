@@ -2,6 +2,7 @@
 
 # Обработка ошибок: если что-то идёт не так, скрипт завершится
 set -e
+apt update && apt install -y python3-venv python3-pip
 
 # Создаём и переходим в директорию для виртуального окружения
 mkdir -p evd_addr && cd evd_addr
