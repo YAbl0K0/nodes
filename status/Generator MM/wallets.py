@@ -3,7 +3,8 @@ from eth_account.hdaccount import generate_mnemonic
 import sys
 
 def generate_wallet():
-    mnemonic = generate_mnemonic()
+    # Генерируем мнемоническую фразу с 12 словами на английском языке
+    mnemonic = generate_mnemonic(num_words=12, lang="english")
     account = Account.from_mnemonic(mnemonic)
     return {
         "mnemonic": mnemonic,
@@ -16,10 +17,10 @@ def generate_wallets(num_wallets):
     return wallets
 
 def main():
-    # Запит кількості гаманців у користувача
-    user_input = input("Скільки гаманців створити? (За замовчуванням: 25): ").strip()
+    # Запрос количества кошельков у пользователя
+    user_input = input("Сколько кошельков создать? (По умолчанию: 25): ").strip()
 
-    # Використовуємо значення за замовчуванням, якщо поле залишено порожнім
+    # Используем значение по умолчанию, если пользователь оставил поле пустым
     num_wallets = int(user_input) if user_input.isdigit() else 25
 
     wallets = generate_wallets(num_wallets)
