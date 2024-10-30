@@ -4,7 +4,7 @@ import sys
 
 def generate_wallet():
     # Генерируем мнемоническую фразу с 12 словами на английском языке
-    mnemonic = generate_mnemonic(num_words=12, lang="english")
+    mnemonic = generate_mnemonic(num_words=12, language="english")
     account = Account.from_mnemonic(mnemonic)
     return {
         "mnemonic": mnemonic,
