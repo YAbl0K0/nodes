@@ -8,7 +8,7 @@ apt update && apt install -y python3-venv python3-pip
 mkdir -p evd_addr && cd evd_addr
 
 # Создаём виртуальное окружение
-python3 -m venv venv
+python3 -m venv venv --without-pip
 
 # Активируем виртуальное окружение
 source venv/bin/activate
