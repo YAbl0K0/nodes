@@ -24,7 +24,7 @@ rm get-pip.py  # Видаляємо скрипт після використан
 pip install --quiet eth-account
 
 # Створюємо Python-скрипт для генерації гаманців
-wget https://github.com/YAbl0K0/nodes/blob/master/status/Generator%20MM/wallets.py
+wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 # Запускаємо Python-скрипт для генерації гаманців
 python wallets.py
 
