@@ -29,3 +29,4 @@ else
 fi
 
 echo "Замена завершена."
+docker compose -f $HOME/infernet-container-starter/deploy/docker-compose.yaml restart
