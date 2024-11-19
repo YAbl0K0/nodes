@@ -1,34 +1,36 @@
 #!/bin/bash
 
-# Запрос приватного ключа от пользователя
-read -p "Введите ваш приватный ключ secp256k1 (без пробелов): " TENDERMINT_PRIVATE_KEY
+# Вводим приватный ключ в формате hex
+read -p "Введите приватный ключ (hex): " PRIVATE_KEY_HEX
 
-# Проверяем, установлен ли Python
-if ! command -v python3 &> /dev/null
-then
-    echo "Python не установлен. Установите Python 3 для запуска этого скрипта."
-    exit 1
+# Проверяем длину ключа (должен быть 64 символа)
+if [ ${#PRIVATE_KEY_HEX} -ne 64 ]; then
+  echo "Ошибка: Приватный ключ должен содержать ровно 64 символа (32 байта)."
+  exit 1
 fi
 
-# Запускаем Python-скрипт для конвертации
-python3 <<EOF
+# Используем Python для создания Ethereum-ключа
+RESULT=$(python3 - <<EOF
 from eth_keys import keys
 
-# Приватный ключ от пользователя
-TENDERMINT_PRIVATE_KEY = "$TENDERMINT_PRIVATE_KEY"
+# Hex-ключ
+private_key_hex = "$PRIVATE_KEY_HEX"
+private_key_bytes = bytes.fromhex(private_key_hex)
 
-try:
-    # Преобразуем ключ из hex в байты
-    private_key_bytes = bytes.fromhex(TENDERMINT_PRIVATE_KEY)
+# Создаём Ethereum-ключ
+eth_private_key = keys.PrivateKey(private_key_bytes)
 
-    # Создаем Ethereum-совместимый приватный ключ
-    eth_private_key = keys.PrivateKey(private_key_bytes)
-
-    # Печатаем результаты
-    print("Ethereum Private Key:", eth_private_key)
-    print("Ethereum Address:", eth_private_key.public_key.to_checksum_address())
-
-except ValueError as e:
-    print("Ошибка: Приватный ключ должен быть в формате hex (16-ричный).")
-    print("Детали ошибки:", e)
+# Вывод результата
+print("Ethereum Private Key:", eth_private_key)
+print("Ethereum Address:", eth_private_key.public_key.to_checksum_address())
 EOF
+)
+
+# Проверяем, успешно ли выполнен скрипт
+if [ $? -ne 0 ]; then
+  echo "Ошибка: Не удалось создать Ethereum-ключ. Проверьте корректность приватного ключа."
+  exit 1
+fi
+
+# Выводим результат
+echo "$RESULT"
