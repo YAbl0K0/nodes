@@ -12,19 +12,19 @@ if [[ ! -f $IP_LIST ]]; then
     exit 1
 fi
 
-# Проходим по каждому IP-адресу в файле
+# Удаляем дубликаты и сохраняем уникальные IP
+UNIQUE_IPS=$(sort -u "$IP_LIST")
+
+# Проверяем подключение для каждого уникального IP
 while IFS= read -r IP; do
     # Пропускаем пустые строки
     if [[ -z $IP ]]; then
         continue
     fi
 
-    echo "Проверка подключения к $IP:$PORT..."
-    
     # Проверяем подключение с помощью nc (netcat)
-    if nc -z -w3 "$IP" "$PORT"; then
-        echo "Успешно подключено к $IP:$PORT"
-    else
-        echo "Не удалось подключиться к $IP:$PORT"
+    if ! nc -z -w3 "$IP" "$PORT"; then
+        # Если подключение не удалось, выводим IP
+        echo "$IP"
     fi
-done < "$IP_LIST"
+done <<< "$UNIQUE_IPS"
