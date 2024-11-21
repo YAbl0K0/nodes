@@ -6,6 +6,9 @@ IP_LIST="ip_list.txt"
 # Порт для проверки
 PORT=8545
 
+# Получение текущей даты в формате YYYY/MM/DD
+CURRENT_DATE=$(date '+%Y/%m/%d')
+
 # Проверяем, существует ли файл с IP-адресами
 if [[ ! -f $IP_LIST ]]; then
     echo "Файл $IP_LIST не найден! Пожалуйста, создайте его и добавьте список IP-адресов."
@@ -25,8 +28,8 @@ while IFS= read -r IP; do
         continue
     fi
 
-    # Если IP-адреса нет в активных подключениях, выводим его
+    # Если IP-адреса нет в активных подключениях, выводим его с датой
     if ! echo "$CONNECTED_IPS" | grep -qw "$IP"; then
-        echo "$IP"
+        echo "$CURRENT_DATE $IP"
     fi
 done <<< "$UNIQUE_IPS"
