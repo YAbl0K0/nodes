@@ -22,7 +22,7 @@ CONNECTED_IPS=$(netstat -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 |
 UNIQUE_IPS=$(sort -u "$IP_LIST")
 
 # Проверяем, какие IP-адреса из файла отсутствуют в активных подключениях
-echo "IP-адреса из файла, отсутствующие в активных подключениях:"
+echo "Айпи не подключены:"
 while IFS= read -r IP; do
     # Пропускаем пустые строки
     if [[ -z $IP ]]; then
