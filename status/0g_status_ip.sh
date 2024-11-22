@@ -22,6 +22,7 @@ CONNECTED_IPS=$(netstat -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 |
 UNIQUE_IPS=$(sort -u "$IP_LIST")
 
 # Проверяем, какие IP-адреса из файла отсутствуют в активных подключениях
+echo "IP-адреса из файла, отсутствующие в активных подключениях:"
 while IFS= read -r IP; do
     # Пропускаем пустые строки
     if [[ -z $IP ]]; then
@@ -33,3 +34,12 @@ while IFS= read -r IP; do
         echo "$CURRENT_DATE $IP"
     fi
 done <<< "$UNIQUE_IPS"
+
+# Проверяем, какие IP-адреса подключены, но отсутствуют в файле
+echo "Подключённые IP-адреса, отсутствующие в файле:"
+while IFS= read -r IP; do
+    # Если IP-адреса нет в файле, выводим его с датой
+    if ! echo "$UNIQUE_IPS" | grep -qw "$IP"; then
+        echo "$CURRENT_DATE $IP"
+    fi
+done <<< "$CONNECTED_IPS"
