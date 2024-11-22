@@ -36,7 +36,7 @@ while IFS= read -r IP; do
 done <<< "$UNIQUE_IPS"
 
 # Проверяем, какие IP-адреса подключены, но отсутствуют в файле
-echo "Подключённые IP-адреса, отсутствующие в файле:"
+echo "Этого айпи нет в списке:"
 while IFS= read -r IP; do
     # Если IP-адреса нет в файле, выводим его с датой
     if ! echo "$UNIQUE_IPS" | grep -qw "$IP"; then
