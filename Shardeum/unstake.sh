@@ -21,8 +21,11 @@ tmux new-session -d -s $SESSION_NAME
 tmux send-keys -t $SESSION_NAME "cd ~/.shardeum && ./shell.sh" C-m
 tmux send-keys -t $SESSION_NAME "operator-cli stop" C-m
 tmux send-keys -t $SESSION_NAME "echo \"$PRIVATE_KEY\" | operator-cli unstake 10" C-m
-tmux send-keys -t $SESSION_NAME "sleep 30" C-m
+tmux send-keys -t $SESSION_NAME "sleep 60" C-m
 tmux send-keys -t $SESSION_NAME "exit" C-m
+
+#Подымаем ноду
+docker exec -i shardeum-dashboard operator-cli start
 
 # Информация о процессе
 echo "Вы можете проверить статус в любой момент командой: tmux attach -t $SESSION_NAME"
