@@ -13,7 +13,7 @@ sudo systemctl enable dcdnd
 sudo systemctl restart dcdnd
 
 pipe-tool generate-wallet --node-registry-url="https://rpc.pipedev.network" --key-path=$HOME/.permissionless/key.json
-sleep 5
+sleep 3
 clear
 pipe-tool link-wallet --node-registry-url="https://rpc.pipedev.network" --key-path=$HOME/.permissionless/key.json
 
