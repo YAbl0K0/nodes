@@ -80,3 +80,7 @@ while IFS= read -r IP; do
         echo "$CURRENT_DATE $IP"
     fi
 done <<< "$CONNECTED_IPS"
+
+TOTAL_TIME=$(awk '{sum+=$2} END {print sum}' ip_time_log.txt)
+echo "Общее время подключения всех IP: $TOTAL_TIME секунд"
+
