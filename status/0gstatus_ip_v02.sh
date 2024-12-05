@@ -1,19 +1,16 @@
 #!/bin/bash
 
-# Путь к файлу со списком IP-адресов
+# Файл со списком IP-адресов
 IP_LIST="ip_list.txt"
+
+# Файл для отслеживания времени подключения
+LOG_FILE="ip_time_log.txt"
 
 # Порт для проверки
 PORT=8545
 
-# Путь к логам и статистике
-LOG_FILE="/var/log/port_activity.log"
-ACTIVE_IPS_FILE="/var/log/active_ips.txt"
-STATS_FILE="/var/log/port_stats.log"
-
-# Текущая дата и время
-CURRENT_TIME=$(date "+%Y-%m-%d %H:%M:%S")
-CURRENT_HOUR=$(date "+%Y-%m-%d %H:")
+# Получение текущей даты в формате YYYY/MM/DD
+CURRENT_DATE=$(date '+%Y/%m/%d')
 
 # Проверяем, существует ли файл с IP-адресами
 if [[ ! -f $IP_LIST ]]; then
@@ -21,43 +18,65 @@ if [[ ! -f $IP_LIST ]]; then
     exit 1
 fi
 
-# Очистка файлов логов и текущего списка активных IP
-> "$LOG_FILE"
-> "$ACTIVE_IPS_FILE"
-> "$STATS_FILE"
+# Проверяем, существует ли файл с логами времени
+if [[ ! -f $LOG_FILE ]]; then
+    touch "$LOG_FILE"
+fi
 
-# Счетчики для статистики
-ACTIVE_COUNT=0
-TOTAL_COUNT=0
+# Получаем список IP-адресов, подключенных к порту 8545
+CONNECTED_IPS=$(netstat -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
 
-# Проверка каждого IP-адреса
-while IFS= read -r IP; do
-    # Пропуск пустых строк и комментариев
-    [[ -z "$IP" || "$IP" =~ ^# ]] && continue
-
-    TOTAL_COUNT=$((TOTAL_COUNT + 1))
-
-    # Проверка доступности порта с помощью netcat
-    if nc -z -w 3 "$IP" "$PORT"; then
-        echo "$CURRENT_TIME - $IP is active" >> "$LOG_FILE"
-        echo "$IP" >> "$ACTIVE_IPS_FILE"
-        ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
+# Обновляем логи времени подключения
+for IP in $CONNECTED_IPS; do
+    if grep -qw "$IP" "$LOG_FILE"; then
+        # Если IP уже есть в логах, увеличиваем общее время подключения
+        PREVIOUS_TIME=$(grep "$IP" "$LOG_FILE" | awk '{print $2}')
+        NEW_TIME=$((PREVIOUS_TIME + 1))
+        sed -i "s/$IP $PREVIOUS_TIME/$IP $NEW_TIME/" "$LOG_FILE"
     else
-        echo "$CURRENT_TIME - $IP is inactive" >> "$LOG_FILE"
+        # Если IP новый, добавляем его в лог
+        echo "$IP 1" >> "$LOG_FILE"
     fi
-done < "$IP_LIST"
+done
 
-# Подсчет количества активных IP за последний час
-ACTIVE_LAST_HOUR=$(grep "$CURRENT_HOUR" "$LOG_FILE" | grep "is active" | awk '{print $5}' | sort -u | wc -l)
+# Проверяем и выводим IP-адреса с их временем подключения
+echo "Время подключения IP-адресов:"
+cat "$LOG_FILE" | while read -r LINE; do
+    IP=$(echo "$LINE" | awk '{print $1}')
+    TIME_CONNECTED=$(echo "$LINE" | awk '{print $2}')
+    echo "IP: $IP - Время подключения: ${TIME_CONNECTED} сек"
+done
 
-# Запись статистики в файл
-echo "$CURRENT_TIME - Active: $ACTIVE_COUNT/$TOTAL_COUNT" >> "$STATS_FILE"
-echo "$CURRENT_TIME - Active last hour: $ACTIVE_LAST_HOUR" >> "$STATS_FILE"
+# Удаляем из логов IP, которые больше не подключены
+while IFS= read -r LINE; do
+    LOGGED_IP=$(echo "$LINE" | awk '{print $1}')
+    if ! echo "$CONNECTED_IPS" | grep -qw "$LOGGED_IP"; then
+        sed -i "/$LOGGED_IP/d" "$LOG_FILE"
+    fi
+done < "$LOG_FILE"
 
-# Вывод итогов
-echo "Проверка завершена:"
-echo "Активных IP: $ACTIVE_COUNT из $TOTAL_COUNT"
-echo "Активных за последний час: $ACTIVE_LAST_HOUR"
-echo "Текущий список активных IP можно найти в файле: $ACTIVE_IPS_FILE"
-echo "Логи находятся в файле: $LOG_FILE"
-echo "Статистика работы в файле: $STATS_FILE"
+# Удаляем дублирующиеся IP-адреса из файла
+UNIQUE_IPS=$(sort -u "$IP_LIST")
+
+# Проверяем, какие IP-адреса из файла отсутствуют в активных подключениях
+echo "Айпи не подключены:"
+while IFS= read -r IP; do
+    # Пропускаем пустые строки
+    if [[ -z $IP ]]; then
+        continue
+    fi
+
+    # Если IP-адреса нет в активных подключениях, выводим его с датой
+    if ! echo "$CONNECTED_IPS" | grep -qw "$IP"; then
+        echo "$CURRENT_DATE $IP"
+    fi
+done <<< "$UNIQUE_IPS"
+
+# Проверяем, какие IP-адреса подключены, но отсутствуют в файле
+echo "Этого айпи нет в списке:"
+while IFS= read -r IP; do
+    # Если IP-адреса нет в файле, выводим его с датой
+    if ! echo "$UNIQUE_IPS" | grep -qw "$IP"; then
+        echo "$CURRENT_DATE $IP"
+    fi
+done <<< "$CONNECTED_IPS"
