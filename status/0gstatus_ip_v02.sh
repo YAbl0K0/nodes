@@ -27,9 +27,9 @@ CONNECTED_IPS=$(netstat -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 |
 for IP in $CONNECTED_IPS; do
     if grep -qw "$IP" "$LOG_FILE"; then
         # Если IP уже есть в логах, увеличиваем общее время подключения
-        PREVIOUS_TIME=$(grep "$IP" "$LOG_FILE" | awk '{print $2}')
+        PREVIOUS_TIME=$(awk -v ip="$IP" '$1 == ip {print $2}' "$LOG_FILE")
         NEW_TIME=$((PREVIOUS_TIME + 1))
-        sed -i "s/$IP $PREVIOUS_TIME/$IP $NEW_TIME/" "$LOG_FILE"
+        sed -i "s/^$IP $PREVIOUS_TIME\$/$IP $NEW_TIME/" "$LOG_FILE"
     else
         # Если IP новый, добавляем его в лог
         echo "$IP 1" >> "$LOG_FILE"
@@ -40,7 +40,7 @@ done
 while IFS= read -r LINE; do
     LOGGED_IP=$(echo "$LINE" | awk '{print $1}')
     if ! echo "$CONNECTED_IPS" | grep -qw "$LOGGED_IP"; then
-        sed -i "/$LOGGED_IP/d" "$LOG_FILE"
+        sed -i "/^$LOGGED_IP /d" "$LOG_FILE"
     fi
 done < "$LOG_FILE"
 
