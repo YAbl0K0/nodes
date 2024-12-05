@@ -1,17 +1,19 @@
 #!/bin/bash
 
-# Файл со списком IP-адресов
+# Путь к файлу со списком IP-адресов
 IP_LIST="ip_list.txt"
 
 # Порт для проверки
 PORT=8545
 
-# Логи
-DISCONNECTED_LOG="disconnected_ips.log"
-UNLISTED_LOG="unlisted_ips.log"
+# Путь к логам и статистике
+LOG_FILE="/var/log/port_activity.log"
+ACTIVE_IPS_FILE="/var/log/active_ips.txt"
+STATS_FILE="/var/log/port_stats.log"
 
-# Получение текущей даты в формате YYYY/MM/DD
-CURRENT_DATE=$(date '+%Y/%m/%d %H:%M:%S')
+# Текущая дата и время
+CURRENT_TIME=$(date "+%Y-%m-%d %H:%M:%S")
+CURRENT_HOUR=$(date "+%Y-%m-%d %H:")
 
 # Проверяем, существует ли файл с IP-адресами
 if [[ ! -f $IP_LIST ]]; then
@@ -19,46 +21,41 @@ if [[ ! -f $IP_LIST ]]; then
     exit 1
 fi
 
-# Получаем список IP-адресов, подключенных к порту 8545
-CONNECTED_IPS=$(netstat -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
+# Очистка текущего списка активных IP перед проверкой
+> "$ACTIVE_IPS_FILE"
 
-# Удаляем дублирующиеся IP-адреса из файла
-UNIQUE_IPS=$(sort -u "$IP_LIST")
+# Счетчики для статистики
+ACTIVE_COUNT=0
+TOTAL_COUNT=0
 
-# Логи чистим перед началом
-> "$DISCONNECTED_LOG"
-> "$UNLISTED_LOG"
-
-# Проверяем, какие IP-адреса из файла отсутствуют в активных подключениях
-DISCONNECTED_COUNT=0
-echo "Айпи не подключены:" >> "$DISCONNECTED_LOG"
+# Проверка каждого IP-адреса
 while IFS= read -r IP; do
-    # Пропускаем пустые строки
-    if [[ -z $IP ]]; then
-        continue
-    fi
+    # Пропуск пустых строк и комментариев
+    [[ -z "$IP" || "$IP" =~ ^# ]] && continue
 
-    # Если IP-адреса нет в активных подключениях, выводим его с датой
-    if ! echo "$CONNECTED_IPS" | grep -qw "$IP"; then
-        echo "$CURRENT_DATE $IP" >> "$DISCONNECTED_LOG"
-        DISCONNECTED_COUNT=$((DISCONNECTED_COUNT + 1))
-    fi
-done <<< "$UNIQUE_IPS"
+    TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
-# Проверяем, какие IP-адреса подключены, но отсутствуют в файле
-UNLISTED_COUNT=0
-echo "Этого айпи нет в списке:" >> "$UNLISTED_LOG"
-while IFS= read -r IP; do
-    # Если IP-адреса нет в файле, выводим его с датой
-    if ! echo "$UNIQUE_IPS" | grep -qw "$IP"; then
-        echo "$CURRENT_DATE $IP" >> "$UNLISTED_LOG"
-        UNLISTED_COUNT=$((UNLISTED_COUNT + 1))
+    # Проверка доступности порта с помощью netcat
+    if nc -z -w 3 "$IP" "$PORT"; then
+        echo "$CURRENT_TIME - $IP is active" >> "$LOG_FILE"
+        echo "$IP" >> "$ACTIVE_IPS_FILE"
+        ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
+    else
+        echo "$CURRENT_TIME - $IP is inactive" >> "$LOG_FILE"
     fi
-done <<< "$CONNECTED_IPS"
+done < "$IP_LIST"
 
-# Общая статистика
-echo "==================== СТАТИСТИКА ===================="
-echo "Всего IP в списке: $(echo "$UNIQUE_IPS" | wc -l)"
-echo "Всего подключенных IP: $(echo "$CONNECTED_IPS" | wc -l)"
-echo "Айпи, отсутствующие в подключениях: $DISCONNECTED_COUNT (см. $DISCONNECTED_LOG)"
-echo "Айпи, отсутствующие в списке: $UNLISTED_COUNT (см. $UNLISTED_LOG)"
+# Подсчет количества активных IP за последний час
+ACTIVE_LAST_HOUR=$(grep "$CURRENT_HOUR" "$LOG_FILE" | grep "is active" | awk '{print $5}' | sort -u | wc -l)
+
+# Запись статистики в файл
+echo "$CURRENT_TIME - Active: $ACTIVE_COUNT/$TOTAL_COUNT" >> "$STATS_FILE"
+echo "$CURRENT_TIME - Active last hour: $ACTIVE_LAST_HOUR" >> "$STATS_FILE"
+
+# Вывод итогов
+echo "Проверка завершена:"
+echo "Активных IP: $ACTIVE_COUNT из $TOTAL_COUNT"
+echo "Активных за последний час: $ACTIVE_LAST_HOUR"
+echo "Текущий список активных IP можно найти в файле: $ACTIVE_IPS_FILE"
+echo "Логи находятся в файле: $LOG_FILE"
+echo "Статистика работы в файле: $STATS_FILE"
