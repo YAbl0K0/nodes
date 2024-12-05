@@ -29,12 +29,12 @@ while IFS= read -r IP; do
     TOTAL_COUNT=$((TOTAL_COUNT + 1))
 
     # Проверка доступности порта
-    if nc -z -w 3 "$IP" 8545; then
-        echo "$CURRENT_TIME - $IP is active (exit code: $?)" >> "$LOG_FILE"
+    if echo "QUIT" | telnet "$IP" 8545 2>/dev/null | grep -q "Connected"; then
+        echo "$CURRENT_TIME - $IP is active" >> "$LOG_FILE"
         echo "$IP" >> "$ACTIVE_IPS_FILE"
         ACTIVE_COUNT=$((ACTIVE_COUNT + 1))
     else
-        echo "$CURRENT_TIME - $IP is inactive (exit code: $?)" >> "$LOG_FILE"
+        echo "$CURRENT_TIME - $IP is inactive" >> "$LOG_FILE"
     fi
 done < "$IP_LIST_FILE"
 
