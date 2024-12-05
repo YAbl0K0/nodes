@@ -5,7 +5,7 @@ LOG_FILE="/var/log/port_check.log"
 ACTIVE_IPS_FILE="/var/log/active_ips.txt"
 
 # Путь к файлу со списком IP-адресов
-IP_LIST_FILE="/var/log/ip_list.txt"
+IP_LIST_FILE="ip_list.txt"
 
 # Текущая дата
 CURRENT_TIME=$(date "+%Y-%m-%d %H:%M:%S")
