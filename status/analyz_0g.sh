@@ -70,4 +70,6 @@ if [[ ${#NEW_IPS[@]} -eq 0 ]]; then
     echo "Нет новых IP."
 else
     for IP_INFO in "${NEW_IPS[@]}"; do
-        echo "$IP_I
+        echo "$IP_INFO"
+    done
+fi
