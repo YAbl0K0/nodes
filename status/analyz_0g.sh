@@ -9,33 +9,28 @@ if [[ ! -f $LOG_FILE ]]; then
     exit 1
 fi
 
-# Текущее время
+# Текущее время (предполагаем, что значения — относительное время в секундах от старта)
 CURRENT_TIME=$(date +%s)
 
 # Временные интервалы
 TWO_HOURS=$((2 * 3600))
 
-# Файлы с сохранёнными IP
-KNOWN_IP_FILE="known_ips.txt"
-NEW_IP_FILE="new_ips.txt"
-
-# Проверяем, существуют ли файлы с известными IP
-if [[ ! -f $KNOWN_IP_FILE ]]; then
-    touch "$KNOWN_IP_FILE"
-fi
-if [[ ! -f $NEW_IP_FILE ]]; then
-    touch "$NEW_IP_FILE"
-fi
-
 # Списки для вывода
 DISCONNECTED_IPS=()
 NEW_IPS=()
 
+# Файлы с известными IP
+KNOWN_IP_FILE="known_ips.txt"
+
+# Проверяем, существует ли файл с известными IP
+if [[ ! -f $KNOWN_IP_FILE ]]; then
+    touch "$KNOWN_IP_FILE"
+fi
+
 # Обрабатываем каждую строку из лог-файла
 while IFS= read -r LINE; do
     IP=$(echo "$LINE" | awk '{print $1}')
-    TOTAL_TIME=$(echo "$LINE" | awk '{print $2}')
-    LAST_SEEN=$(echo "$LINE" | awk '{print $3}')
+    LAST_SEEN=$(echo "$LINE" | awk '{print $2}')
 
     # Проверяем, чтобы LAST_SEEN был валидным числом
     if [[ ! "$LAST_SEEN" =~ ^[0-9]+$ ]]; then
@@ -43,10 +38,11 @@ while IFS= read -r LINE; do
         continue
     fi
 
-    LAST_SEEN_DATE=$(date -d @"$LAST_SEEN" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    # Преобразуем время в читаемый формат (если возможно)
+    LAST_SEEN_DATE=$(date -d @"$((CURRENT_TIME - LAST_SEEN))" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
 
     # Проверяем, не был ли IP активен последние 2 часа
-    if (( CURRENT_TIME - LAST_SEEN > TWO_HOURS )); then
+    if (( LAST_SEEN > TWO_HOURS )); then
         DISCONNECTED_IPS+=("$LAST_SEEN_DATE ; $IP")
     fi
 
@@ -57,17 +53,13 @@ while IFS= read -r LINE; do
     fi
 done < "$LOG_FILE"
 
-# Сохраняем новые IP в файл
-for IP_INFO in "${NEW_IPS[@]}"; do
-    echo "$IP_INFO" >> "$NEW_IP_FILE"
-done
-
-# Вывод результатов
+# Выводим IP, не активные последние 2 часа
 echo "IP, не подключённые последние 2 часа:"
 for IP_INFO in "${DISCONNECTED_IPS[@]}"; do
     echo "$IP_INFO"
 done
 
+# Выводим новые IP
 echo ""
 echo "Новые IP:"
 for IP_INFO in "${NEW_IPS[@]}"; do
