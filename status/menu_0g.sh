@@ -14,11 +14,12 @@ execute_script() {
     case $1 in
         1)
             echo "Выполняется 0gstatus_ip_v02..."
-            # Проверяем, существует ли файл ip_time_log.txt
-            if [[ -f ip_time_log.txt ]]; then
-                awk '{print "IP:", $1, "- Общее время подключения:", $2, "секунд"}' ip_time_log.txt
+            # Проверяем существование файла ip_time_log.txt
+            if [[ -f ./ip_time_log.txt ]]; then
+                echo "Обработка файла ip_time_log.txt..."
+                awk '{print "IP:", $1, "- Общее время подключения:", $2, "секунд"}' ./ip_time_log.txt
             else
-                echo "Файл ip_time_log.txt не найден. Убедитесь, что он существует в текущей директории."
+                echo "Файл ip_time_log.txt не найден. Убедитесь, что файл находится в текущей директории: $(pwd)"
             fi
             ;;
         2)
