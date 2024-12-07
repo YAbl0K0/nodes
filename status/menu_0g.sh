@@ -14,7 +14,12 @@ execute_script() {
     case $1 in
         1)
             echo "Выполняется 0gstatus_ip_v02..."
-            awk '{print "IP:", $1, "- Общее время подключения:", $2, "секунд"}' ip_time_log.txt
+            # Проверяем, существует ли файл ip_time_log.txt
+            if [[ -f ip_time_log.txt ]]; then
+                awk '{print "IP:", $1, "- Общее время подключения:", $2, "секунд"}' ip_time_log.txt
+            else
+                echo "Файл ip_time_log.txt не найден. Убедитесь, что он существует в текущей директории."
+            fi
             ;;
         2)
             echo "Выполняется 4hour_0g..."
@@ -38,6 +43,6 @@ execute_script() {
 while true; do
     show_menu
     read -p "Введите номер вашего выбора: " choice
-    execute_script $choice
+    execute_script "$choice"
     echo ""
 done
