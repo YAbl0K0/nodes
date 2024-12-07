@@ -13,7 +13,7 @@ show_menu() {
 execute_script() {
     case $1 in
         1)
-            echo "Выполняется 0gstatus_ip_v02..."
+            echo "Выполняется Проверка айпи их тотал тайм..."
             # Проверяем существование файла ip_time_log.txt
             if [[ -f ./ip_time_log.txt ]]; then
                 echo "Обработка файла ip_time_log.txt..."
@@ -23,11 +23,11 @@ execute_script() {
             fi
             ;;
         2)
-            echo "Выполняется 4hour_0g..."
+            echo "Выполняется Проверка ссерверов за последние 4 часа..."
             bash <(curl -s https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/4hour_0g.sh)
             ;;
         3)
-            echo "Выполняется analyz_0g..."
+            echo "Выполняется Анализ подключения..."
             bash <(curl -s https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/analyz_0g.sh)
             ;;
         4)
