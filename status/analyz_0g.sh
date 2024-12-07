@@ -45,13 +45,13 @@ while IFS= read -r LINE; do
 
     # Проверяем, не был ли IP активен последние 2 часа
     if (( TIME_DIFF > TWO_HOURS )); then
-        DISCONNECTED_IPS+=("$LAST_SEEN_DATE ; $IP")
+        DISCONNECTED_IPS+=("$LAST_SEEN_DATE $IP")
     fi
 
     # Проверяем, является ли IP новым
     if ! grep -qw "$IP" "$KNOWN_IP_FILE"; then
         echo "$IP" >> "$KNOWN_IP_FILE"
-        NEW_IPS+=("$LAST_SEEN_DATE ; $IP")
+        NEW_IPS+=("$LAST_SEEN_DATE $IP")
     fi
 done < "$LOG_FILE"
 
