@@ -34,8 +34,16 @@ NEW_IPS=()
 # Обрабатываем каждую строку из лог-файла
 while IFS= read -r LINE; do
     IP=$(echo "$LINE" | awk '{print $1}')
+    TOTAL_TIME=$(echo "$LINE" | awk '{print $2}')
     LAST_SEEN=$(echo "$LINE" | awk '{print $3}')
-    LAST_SEEN_DATE=$(date -d @"$LAST_SEEN" +"%Y-%m-%d %H:%M:%S")
+
+    # Проверяем, чтобы LAST_SEEN был валидным числом
+    if [[ ! "$LAST_SEEN" =~ ^[0-9]+$ ]]; then
+        echo "Некорректная метка времени для IP: $IP"
+        continue
+    fi
+
+    LAST_SEEN_DATE=$(date -d @"$LAST_SEEN" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
 
     # Проверяем, не был ли IP активен последние 2 часа
     if (( CURRENT_TIME - LAST_SEEN > TWO_HOURS )); then
