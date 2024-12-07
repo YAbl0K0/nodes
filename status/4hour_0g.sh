@@ -15,8 +15,7 @@ CURRENT_TIME=$(date +%s)
 # Временной интервал (4 часа в секундах)
 TIME_INTERVAL=$((4 * 3600))
 
-# Итоговый подсчёт времени подключения
-TOTAL_CONNECTED_TIME=0
+echo "Время подключения для каждого IP за последние 4 часа:"
 
 # Обрабатываем каждую строку из лог-файла
 while IFS= read -r LINE; do
@@ -24,18 +23,16 @@ while IFS= read -r LINE; do
     TOTAL_TIME=$(echo "$LINE" | awk '{print $2}')
     LAST_SEEN=$(echo "$LINE" | awk '{print $3}')
 
-    # Если IP был активен за последние 4 часа
+    # Рассчитываем время подключения за последние 4 часа
     if (( CURRENT_TIME - LAST_SEEN <= TIME_INTERVAL )); then
-        # Учитываем текущее подключение
+        # Учитываем текущее активное подключение
         ACTIVE_TIME=$((CURRENT_TIME - LAST_SEEN))
-        TOTAL_CONNECTED_TIME=$((TOTAL_CONNECTED_TIME + TOTAL_TIME + ACTIVE_TIME))
+        TOTAL_FOR_IP=$((TOTAL_TIME + ACTIVE_TIME))
     else
-        # Учитываем только зафиксированное время
-        if (( TOTAL_TIME > 0 )); then
-            TOTAL_CONNECTED_TIME=$((TOTAL_CONNECTED_TIME + TOTAL_TIME))
-        fi
+        # Учитываем только зафиксированное общее время
+        TOTAL_FOR_IP=$TOTAL_TIME
     fi
-done < "$LOG_FILE"
 
-# Выводим итоговое время
-echo "Общее время подключения серверов за последние 4 часа: $TOTAL_CONNECTED_TIME секунд"
+    # Выводим IP и время подключения
+    echo "$IP: $TOTAL_FOR_IP секунд"
+done < "$LOG_FILE"
