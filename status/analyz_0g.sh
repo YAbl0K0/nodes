@@ -19,7 +19,7 @@ TWO_HOURS=$((2 * 3600))
 DISCONNECTED_IPS=()
 NEW_IPS=()
 
-# Файл с известными IP
+# Файлы с известными IP
 KNOWN_IP_FILE="known_ips.txt"
 if [[ ! -f $KNOWN_IP_FILE ]]; then
     touch "$KNOWN_IP_FILE"
@@ -36,7 +36,7 @@ while IFS= read -r LINE; do
         continue
     fi
 
-    # Рассчитываем разницу времени в секундах
+    # Рассчитываем разницу времени
     TIME_DIFF=$((CURRENT_TIME - LAST_SEEN))
 
     # Преобразуем секунды в часы и минуты
@@ -44,7 +44,7 @@ while IFS= read -r LINE; do
     MINUTES=$(((TIME_DIFF % 3600) / 60))
 
     # Форматируем время как HH:MM
-    TIME_DIFF_FORMATTED=$(printf "%02d:%02d" "$HOURS" "$MINUTES")
+    TIME_DIFF_FORMATTED=$(printf "%d:%02d" "$HOURS" "$MINUTES")
 
     # Преобразуем дату последнего подключения в читаемый формат
     LAST_SEEN_DATE=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%Y-%m-%d")
