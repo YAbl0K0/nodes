@@ -44,7 +44,7 @@ while IFS= read -r LINE; do
     MINUTES=$(((TIME_DIFF % 3600) / 60))
 
     # Форматируем время как HH:MM
-    TIME_DIFF_FORMATTED=$(printf "%d:%02d" "$HOURS" "$MINUTES")
+    TIME_DIFF_FORMATTED=$(printf "%02d:%02d" "$HOURS" "$MINUTES")
 
     # Преобразуем дату последнего подключения в читаемый формат
     LAST_SEEN_DATE=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%Y-%m-%d")
