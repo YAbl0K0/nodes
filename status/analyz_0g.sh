@@ -9,11 +9,12 @@ if [[ ! -f $LOG_FILE ]]; then
     exit 1
 fi
 
-# Временные интервалы
-TWO_HOURS=$((2 * 3600))
+# Текущее время в секундах с момента запуска основного скрипта
+CURRENT_TIME=$(awk '{print $2}' "$LOG_FILE" | sort -nr | head -n1)
 
-# Время работы скрипта с момента старта (берём текущее значение в секундах)
-CURRENT_TIME=$(awk '{if ($2 > 0) {print $2}}' "$LOG_FILE" | sort -nr | head -n1)
+# Временные интервалы в секундах
+TWO_HOURS=$((2 * 3600))
+FOUR_HOURS=$((4 * 3600))
 
 # Списки для вывода
 DISCONNECTED_IPS=()
@@ -21,8 +22,6 @@ NEW_IPS=()
 
 # Файлы с известными IP
 KNOWN_IP_FILE="known_ips.txt"
-
-# Проверяем, существует ли файл с известными IP
 if [[ ! -f $KNOWN_IP_FILE ]]; then
     touch "$KNOWN_IP_FILE"
 fi
@@ -38,11 +37,11 @@ while IFS= read -r LINE; do
         continue
     fi
 
-    # Рассчитываем разницу между текущим временем и временем последнего подключения
+    # Рассчитываем разницу времени
     TIME_DIFF=$((CURRENT_TIME - LAST_SEEN))
 
-    # Преобразуем время последнего подключения в читаемый формат
-    LAST_SEEN_DATE=$(date -d @"$(($(date +%s) - TIME_DIFF))" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    # Преобразуем время последнего подключения в читаемый формат (относительно текущего времени)
+    LAST_SEEN_DATE=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%Y-%m-%d %H:%M:%S")
 
     # Проверяем, не был ли IP активен последние 2 часа
     if (( TIME_DIFF > TWO_HOURS )); then
@@ -56,15 +55,22 @@ while IFS= read -r LINE; do
     fi
 done < "$LOG_FILE"
 
-# Выводим IP, не активные последние 2 часа
+# Выводим результаты
 echo "IP, не подключённые последние 2 часа:"
-for IP_INFO in "${DISCONNECTED_IPS[@]}"; do
-    echo "$IP_INFO"
-done
+if [[ ${#DISCONNECTED_IPS[@]} -eq 0 ]]; then
+    echo "Нет таких IP."
+else
+    for IP_INFO in "${DISCONNECTED_IPS[@]}"; do
+        echo "$IP_INFO"
+    done
+fi
 
-# Выводим новые IP
 echo ""
 echo "Новые IP:"
-for IP_INFO in "${NEW_IPS[@]}"; do
-    echo "$IP_INFO"
-done
+if [[ ${#NEW_IPS[@]} -eq 0 ]]; then
+    echo "Нет новых IP."
+else
+    for IP_INFO in "${NEW_IPS[@]}"; do
+        echo "$IP_INFO"
+    done
+fi
