@@ -14,7 +14,6 @@ CURRENT_TIME=$(awk '{print $2}' "$LOG_FILE" | sort -nr | head -n1)
 
 # Временные интервалы в секундах
 TWO_HOURS=$((2 * 3600))
-FOUR_HOURS=$((4 * 3600))
 
 # Списки для вывода
 DISCONNECTED_IPS=()
@@ -65,12 +64,4 @@ else
     done
 fi
 
-echo ""
-echo "Новые IP:"
-if [[ ${#NEW_IPS[@]} -eq 0 ]]; then
-    echo "Нет новых IP."
-else
-    for IP_INFO in "${NEW_IPS[@]}"; do
-        echo "$IP_INFO"
-    done
-fi
+echo
