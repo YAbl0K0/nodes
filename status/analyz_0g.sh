@@ -39,19 +39,18 @@ while IFS= read -r LINE; do
     # Рассчитываем разницу времени
     TIME_DIFF=$((CURRENT_TIME - LAST_SEEN))
 
-    # Преобразуем время последнего подключения в читаемый формат (относительно текущего времени)
-    LAST_SEEN_TIME=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%s")
+    # Преобразуем дату последнего подключения в читаемый формат
     LAST_SEEN_DATE=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%Y-%m-%d")
 
     # Проверяем, не был ли IP активен последние 2 часа
     if (( TIME_DIFF > TWO_HOURS )); then
-        DISCONNECTED_IPS+=("$LAST_SEEN_TIME $LAST_SEEN_DATE $IP")
+        DISCONNECTED_IPS+=("$TIME_DIFF $LAST_SEEN_DATE $IP")
     fi
 
     # Проверяем, является ли IP новым
     if ! grep -qw "$IP" "$KNOWN_IP_FILE"; then
         echo "$IP" >> "$KNOWN_IP_FILE"
-        NEW_IPS+=("$LAST_SEEN_TIME $LAST_SEEN_DATE $IP")
+        NEW_IPS+=("$TIME_DIFF $LAST_SEEN_DATE $IP")
     fi
 done < "$LOG_FILE"
 
