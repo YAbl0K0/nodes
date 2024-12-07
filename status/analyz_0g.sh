@@ -9,11 +9,11 @@ if [[ ! -f $LOG_FILE ]]; then
     exit 1
 fi
 
-# Текущее время (предполагаем, что значения — относительное время в секундах от старта)
-CURRENT_TIME=$(date +%s)
-
 # Временные интервалы
 TWO_HOURS=$((2 * 3600))
+
+# Время работы скрипта с момента старта (берём текущее значение в секундах)
+CURRENT_TIME=$(awk '{if ($2 > 0) {print $2}}' "$LOG_FILE" | sort -nr | head -n1)
 
 # Списки для вывода
 DISCONNECTED_IPS=()
@@ -38,11 +38,14 @@ while IFS= read -r LINE; do
         continue
     fi
 
-    # Преобразуем время в читаемый формат (если возможно)
-    LAST_SEEN_DATE=$(date -d @"$((CURRENT_TIME - LAST_SEEN))" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
+    # Рассчитываем разницу между текущим временем и временем последнего подключения
+    TIME_DIFF=$((CURRENT_TIME - LAST_SEEN))
+
+    # Преобразуем время последнего подключения в читаемый формат
+    LAST_SEEN_DATE=$(date -d @"$(($(date +%s) - TIME_DIFF))" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
 
     # Проверяем, не был ли IP активен последние 2 часа
-    if (( LAST_SEEN > TWO_HOURS )); then
+    if (( TIME_DIFF > TWO_HOURS )); then
         DISCONNECTED_IPS+=("$LAST_SEEN_DATE ; $IP")
     fi
 
