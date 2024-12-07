@@ -39,8 +39,8 @@ while IFS= read -r LINE; do
     # Рассчитываем разницу времени
     TIME_DIFF=$((CURRENT_TIME - LAST_SEEN))
 
-    # Преобразуем секунды в часы с дробной частью
-    TIME_DIFF_HOURS=$(awk -v seconds="$TIME_DIFF" 'BEGIN {printf "%.2f", seconds / 3600}')
+    # Преобразуем секунды в часы (целое число)
+    TIME_DIFF_HOURS=$((TIME_DIFF / 3600))
 
     # Преобразуем дату последнего подключения в читаемый формат
     LAST_SEEN_DATE=$(date -d "@$(( $(date +%s) - TIME_DIFF ))" +"%Y-%m-%d")
