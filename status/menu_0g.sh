@@ -14,7 +14,7 @@ execute_script() {
     case $1 in
         1)
             echo "Выполняется 0gstatus_ip_v02..."
-            bash <(curl -s https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/0gstatus_ip_v02.sh)
+            awk '{print "IP:", $1, "- Общее время подключения:", $2, "секунд"}' ip_time_log.txt
             ;;
         2)
             echo "Выполняется 4hour_0g..."
