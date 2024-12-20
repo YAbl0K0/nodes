@@ -1,24 +1,46 @@
 #!/bin/bash
 
-# Файлы логов
-LOG_FILE="ip_time_log.txt"
-INACTIVE_LOG_FILE="inactive_ip_log.txt"
+# Файлы
+IP_LIST="ip_list.txt"         # Список IP
+LOG_FILE="ip_time_log.txt"    # Лог времени подключения
 
-# Текущее время (в секундах с начала эпохи UNIX)
+# Порт для проверки
+PORT=8545
+# Текущее время
 CURRENT_TIME=$(date +%s)
 
-echo "Неактивные IP и время неактивности:"
-while IFS= read -r LINE; do
-    LOGGED_IP=$(echo "$LINE" | awk '{print $1}')
-    LOGGED_TIME=$(echo "$LINE" | awk '{print $2}')
-    
-    # Вычисляем время неактивности (в секундах)
-    TIME_DIFF=$((CURRENT_TIME - LOGGED_TIME))
+# Проверяем, существует ли файл со списком IP
+if [[ ! -f $IP_LIST ]]; then
+    echo "Файл $IP_LIST не найден."
+    exit 1
+fi
 
-    # Если IP не подключён (не активен сейчас)
-    if ! ss -tn | grep ":8545" | awk '{print $5}' | cut -d':' -f1 | grep -qw "$LOGGED_IP"; then
-        # Перевод времени неактивности в часы
-        TIME_DIFF_HOURS=$((TIME_DIFF / 3600))
-        echo "$LOGGED_IP не подключён $TIME_DIFF_HOURS часов"
-    fi
+# Создаём лог-файл, если он не существует
+if [[ ! -f $LOG_FILE ]]; then
+    touch "$LOG_FILE"
+fi
+
+# Ассоциативный массив для хранения временных меток подключения
+declare -A CONNECTED_IPS
+
+# Загружаем предыдущие данные из лога
+while IFS= read -r line; do
+    IP=$(echo "$line" | awk '{print $1}')
+    LAST_SEEN=$(echo "$line" | awk '{print $2}')
+    CONNECTED_IPS["$IP"]=$LAST_SEEN
 done < "$LOG_FILE"
+
+# Получаем список подключённых IP
+ACTIVE_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
+
+# Проверяем отключённые IP
+echo "Отключённые IP и время неактивности:"
+for IP in "${!CONNECTED_IPS[@]}"; do
+    if ! echo "$ACTIVE_IPS" | grep -qw "$IP"; then
+        LAST_SEEN=${CONNECTED_IPS["$IP"]}
+        INACTIVE_TIME=$((CURRENT_TIME - LAST_SEEN))
+        INACTIVE_HOURS=$((INACTIVE_TIME / 3600))
+        INACTIVE_MINUTES=$(( (INACTIVE_TIME % 3600) / 60 ))
+        echo "$IP неактивен $INACTIVE_HOURS часов и $INACTIVE_MINUTES минут"
+    fi
+done
