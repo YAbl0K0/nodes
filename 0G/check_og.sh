@@ -41,15 +41,19 @@ fi
 
 # Обновляем лог времени подключения
 echo "Подключённые IP и общее время подключения:"
-for IP in "${!CONNECTED_IPS[@]}"; do
-    if echo "$ACTIVE_IPS" | grep -qw "$IP"; then
+while IFS= read -r IP; do
+    if echo "$ACTIVE_IPS" | grep -wq "$IP"; then
         LAST_SEEN=${CONNECTED_IPS["$IP"]}
-        CONNECTED_TIME=$((CURRENT_TIME - LAST_SEEN))
-        CONNECTED_HOURS=$((CONNECTED_TIME / 3600))
-        echo "$IP подключён $CONNECTED_HOURS часов"
+        if [[ -n "$LAST_SEEN" ]]; then
+            CONNECTED_TIME=$((CURRENT_TIME - LAST_SEEN))
+            CONNECTED_HOURS=$((CONNECTED_TIME / 3600))
+            echo "$IP подключён $CONNECTED_HOURS часов"
+        else
+            echo "$IP подключён впервые."
+        fi
         CONNECTED_IPS["$IP"]=$CURRENT_TIME
     fi
-done
+done < "$IP_LIST"
 
 # Записываем обновлённые данные в лог-файл
 > "$LOG_FILE"
