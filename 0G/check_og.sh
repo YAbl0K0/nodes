@@ -10,7 +10,16 @@ PORT=${1:-8545}
 # Ассоциативный массив для хранения временных меток активных IP
 declare -A ACTIVE_IPS
 
-# Загрузка существующих логов в память
+# Проверяем, существует ли файл для логов не активных айпи
+if [[ ! -f $INACTIVE_LOG_FILE ]]; then
+    touch "$INACTIVE_LOG_FILE"
+fi
+
+# Проверяем, существует ли файл для логов
+if [[ ! -f $LOG_FILE ]]; then
+    touch "$LOG_FILE"
+fi
+
 if [[ -f $LOG_FILE ]]; then
     while IFS= read -r line; do
         ip=$(echo "$line" | awk '{print $1}')
@@ -25,7 +34,7 @@ while true; do
     CURRENT_TIME=$(date +%s)
 
     # Получаем список уникальных IP-адресов, подключенных к указанному порту
-    CONNECTED_IPS=$(ss -tn "state established" | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
+    CONNECTED_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
 
     # Обновляем временные метки активных IP
     for IP in $CONNECTED_IPS; do
@@ -46,6 +55,19 @@ while true; do
             echo "$IP $LAST_SEEN" >> "$LOG_FILE"
         fi
     done
+
+    # Печатаем неактивные IP с временем в часах и минутах
+    echo "Неактивные IP:"
+    while IFS= read -r line; do
+        ip=$(echo "$line" | awk '{print $1}')
+        last_seen=$(echo "$line" | awk '{print $2}')
+        time_diff=$((CURRENT_TIME - last_seen))
+        if (( time_diff > 7200 )); then
+            hours=$((time_diff / 3600))
+            minutes=$(( (time_diff % 3600) / 60 ))
+            echo "$ip не подключён $hours часов и $minutes минут"
+        fi
+    done < "$INACTIVE_LOG_FILE"
 
     # Пауза перед следующей итерацией (в секундах)
     sleep 60
