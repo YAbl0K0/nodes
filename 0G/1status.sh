@@ -3,8 +3,14 @@
 # Порт для проверки
 PORT=8545
 
-# Извлекаем активные подключения по порту
-RAW_OUTPUT=$(ss -tan | grep ":$PORT")
+# Проверяем, установлен ли netstat
+if ! command -v netstat &> /dev/null; then
+    echo "Команда netstat не найдена. Установите её, чтобы использовать этот скрипт."
+    exit 1
+fi
+
+# Извлекаем активные соединения по порту
+RAW_OUTPUT=$(netstat -tan | grep ":$PORT")
 
 # Проверяем, есть ли активные подключения
 if [[ -z "$RAW_OUTPUT" ]]; then
@@ -12,7 +18,7 @@ if [[ -z "$RAW_OUTPUT" ]]; then
     exit 0
 fi
 
-# Обрабатываем данные, извлекая только IP-адреса клиентов
+# Извлекаем только IP-адреса
 CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
 
 # Проверяем, удалось ли извлечь IP-адреса
@@ -21,6 +27,6 @@ if [[ -z "$CONNECTED_IPS" ]]; then
     exit 1
 fi
 
-# Выводим IP-адреса клиентов
+# Выводим IP-адреса
 echo "Список подключённых IP к порту $PORT:"
 echo "$CONNECTED_IPS"
