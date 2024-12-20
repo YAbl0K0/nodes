@@ -39,10 +39,19 @@ if [[ -z "$ACTIVE_IPS" ]]; then
     exit 0
 fi
 
+# Фильтруем пустые строки в IP_LIST
+grep -v '^$' "$IP_LIST" > /tmp/filtered_ip_list.txt
+
 # Обновляем лог времени подключения
 echo "Подключённые IP и общее время подключения:"
 while IFS= read -r IP; do
-    if echo "$ACTIVE_IPS" | grep -wq "$IP"; then
+    # Проверяем корректность IP
+    if [[ -z "$IP" ]]; then
+        continue
+    fi
+
+    # Проверяем, есть ли IP в списке активных
+    if echo "$ACTIVE_IPS" | grep -qw "$IP"; then
         LAST_SEEN=${CONNECTED_IPS["$IP"]}
         if [[ -n "$LAST_SEEN" ]]; then
             CONNECTED_TIME=$((CURRENT_TIME - LAST_SEEN))
@@ -53,7 +62,7 @@ while IFS= read -r IP; do
         fi
         CONNECTED_IPS["$IP"]=$CURRENT_TIME
     fi
-done < "$IP_LIST"
+done < /tmp/filtered_ip_list.txt
 
 # Записываем обновлённые данные в лог-файл
 > "$LOG_FILE"
