@@ -33,6 +33,12 @@ done < "$LOG_FILE"
 # Получаем список подключённых IP
 ACTIVE_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
 
+# Проверяем, есть ли активные подключения
+if [[ -z "$ACTIVE_IPS" ]]; then
+    echo "Нет подключённых IP по порту $PORT."
+    exit 0
+fi
+
 # Обновляем лог времени подключения
 echo "Подключённые IP и общее время подключения:"
 for IP in "${!CONNECTED_IPS[@]}"; do
