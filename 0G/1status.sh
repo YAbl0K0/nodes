@@ -3,24 +3,24 @@
 # Порт для проверки
 PORT=8545
 
-# Извлекаем сырой вывод `ss`
+# Проверяем активные подключения
 RAW_OUTPUT=$(ss -tan | grep ":$PORT")
 
-# Проверяем, есть ли данные в выводе
+# Если нет данных, выводим сообщение
 if [[ -z "$RAW_OUTPUT" ]]; then
-    echo "Нет подключённых IP по порту $PORT."
+    echo "Нет подключений по порту $PORT."
     exit 0
 fi
 
-# Извлекаем только IP-адреса
-CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $6}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
+# Извлекаем IP-адреса
+CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $NF}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
 
-# Проверяем, есть ли извлечённые IP
+# Проверяем, удалось ли извлечь IP-адреса
 if [[ -z "$CONNECTED_IPS" ]]; then
-    echo "Не удалось извлечь IP-адреса из данных."
+    echo "Не удалось извлечь IP-адреса."
     exit 1
 fi
 
-# Выводим список подключённых IP
+# Выводим IP-адреса
 echo "Список подключённых IP к порту $PORT:"
 echo "$CONNECTED_IPS"
