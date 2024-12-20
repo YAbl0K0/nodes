@@ -1,32 +1,31 @@
 #!/bin/bash
 
+# Файл со списком IP
+IP_LIST="ip_list.txt"
 # Порт для проверки
 PORT=8545
 
-# Проверяем, установлен ли netstat
-if ! command -v netstat &> /dev/null; then
-    echo "Команда netstat не найдена. Установите её, чтобы использовать этот скрипт."
+# Проверяем, существует ли файл со списком IP
+if [[ ! -f $IP_LIST ]]; then
+    echo "Файл $IP_LIST не найден. Убедитесь, что он существует."
     exit 1
 fi
 
-# Извлекаем активные соединения по порту
-RAW_OUTPUT=$(netstat -tan | grep ":$PORT")
+# Получаем список текущих подключённых IP
+CONNECTED_IPS=$(netstat -tan | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
 
-# Проверяем, есть ли активные подключения
-if [[ -z "$RAW_OUTPUT" ]]; then
-    echo "Нет подключений по порту $PORT."
+# Если нет подключённых IP, выводим весь список из `ip_list.txt` как не подключённый
+if [[ -z "$CONNECTED_IPS" ]]; then
+    echo "Нет подключённых IP по порту $PORT."
+    echo "Все IP из $IP_LIST считаются не подключёнными:"
+    cat "$IP_LIST"
     exit 0
 fi
 
-# Извлекаем только IP-адреса
-CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
-
-# Проверяем, удалось ли извлечь IP-адреса
-if [[ -z "$CONNECTED_IPS" ]]; then
-    echo "Не удалось извлечь IP-адреса из данных."
-    exit 1
-fi
-
-# Выводим IP-адреса
-echo "Список подключённых IP к порту $PORT:"
-echo "$CONNECTED_IPS"
+# Проверяем IP из списка
+echo "IP-адреса из $IP_LIST, которые не подключены:"
+while IFS= read -r IP; do
+    if ! echo "$CONNECTED_IPS" | grep -qw "$IP"; then
+        echo "$IP"
+    fi
+done < "$IP_LIST"
