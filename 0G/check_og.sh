@@ -1,74 +1,52 @@
 #!/bin/bash
 
-# Файлы для логирования
-LOG_FILE="ip_time_log.txt"          # Все подключения с временной меткой
-INACTIVE_LOG_FILE="inactive_ip_log.txt"  # Отключённые IP
+# Файлы
+IP_LIST="ip_list.txt"         # Список IP
+LOG_FILE="ip_time_log.txt"    # Лог времени подключения
 
-# Порт для мониторинга (можно передать через аргумент командной строки)
-PORT=${1:-8545}
+# Порт для проверки
+PORT=8545
+# Текущее время
+CURRENT_TIME=$(date +%s)
 
-# Ассоциативный массив для хранения временных меток активных IP
-declare -A ACTIVE_IPS
-
-# Проверяем, существует ли файл для логов не активных айпи
-if [[ ! -f $INACTIVE_LOG_FILE ]]; then
-    touch "$INACTIVE_LOG_FILE"
+# Проверяем, существует ли файл со списком IP
+if [[ ! -f $IP_LIST ]]; then
+    echo "Файл $IP_LIST не найден."
+    exit 1
 fi
 
-# Проверяем, существует ли файл для логов
+# Создаём лог-файл, если он не существует
 if [[ ! -f $LOG_FILE ]]; then
     touch "$LOG_FILE"
 fi
 
-if [[ -f $LOG_FILE ]]; then
-    while IFS= read -r line; do
-        ip=$(echo "$line" | awk '{print $1}')
-        timestamp=$(echo "$line" | awk '{print $2}')
-        ACTIVE_IPS["$ip"]=$timestamp
-    done < "$LOG_FILE"
-fi
+# Ассоциативный массив для хранения временных меток подключения
+declare -A CONNECTED_IPS
 
-# Основной цикл
-while true; do
-    # Текущее время (в секундах с начала эпохи UNIX)
-    CURRENT_TIME=$(date +%s)
+# Загружаем предыдущие данные из лога
+while IFS= read -r line; do
+    IP=$(echo "$line" | awk '{print $1}')
+    LAST_SEEN=$(echo "$line" | awk '{print $2}')
+    CONNECTED_IPS["$IP"]=$LAST_SEEN
+done < "$LOG_FILE"
 
-    # Получаем список уникальных IP-адресов, подключенных к указанному порту
-    CONNECTED_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
+# Получаем список подключённых IP
+ACTIVE_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
 
-    # Обновляем временные метки активных IP
-    for IP in $CONNECTED_IPS; do
-        ACTIVE_IPS["$IP"]=$CURRENT_TIME
-    done
+# Обновляем лог времени подключения
+echo "Подключённые IP и общее время подключения:"
+for IP in "${!CONNECTED_IPS[@]}"; do
+    if echo "$ACTIVE_IPS" | grep -qw "$IP"; then
+        LAST_SEEN=${CONNECTED_IPS["$IP"]}
+        CONNECTED_TIME=$((CURRENT_TIME - LAST_SEEN))
+        CONNECTED_HOURS=$((CONNECTED_TIME / 3600))
+        echo "$IP подключён $CONNECTED_HOURS часов"
+        CONNECTED_IPS["$IP"]=$CURRENT_TIME
+    fi
+done
 
-    # Проверяем неактивные IP и обновляем файл логов
-    > "$LOG_FILE"  # Очищаем файл перед записью новых данных
-    for IP in "${!ACTIVE_IPS[@]}"; do
-        LAST_SEEN=${ACTIVE_IPS["$IP"]}
-        if (( CURRENT_TIME - LAST_SEEN > 7200 )); then
-            # Если IP неактивен более 2 часов, добавляем его в INACTIVE_LOG_FILE
-            if ! grep -qw "$IP" "$INACTIVE_LOG_FILE"; then
-                echo "$IP $LAST_SEEN" >> "$INACTIVE_LOG_FILE"
-            fi
-        else
-            # Если IP всё ещё активен, записываем его в LOG_FILE
-            echo "$IP $LAST_SEEN" >> "$LOG_FILE"
-        fi
-    done
-
-    # Печатаем неактивные IP с временем в часах и минутах
-    echo "Неактивные IP:"
-    while IFS= read -r line; do
-        ip=$(echo "$line" | awk '{print $1}')
-        last_seen=$(echo "$line" | awk '{print $2}')
-        time_diff=$((CURRENT_TIME - last_seen))
-        if (( time_diff > 7200 )); then
-            hours=$((time_diff / 3600))
-            minutes=$(( (time_diff % 3600) / 60 ))
-            echo "$ip не подключён $hours часов и $minutes минут"
-        fi
-    done < "$INACTIVE_LOG_FILE"
-
-    # Пауза перед следующей итерацией (в секундах)
-    sleep 60
+# Записываем обновлённые данные в лог-файл
+> "$LOG_FILE"
+for IP in "${!CONNECTED_IPS[@]}"; do
+    echo "$IP ${CONNECTED_IPS["$IP"]}" >> "$LOG_FILE"
 done
