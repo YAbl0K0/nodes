@@ -15,6 +15,12 @@ fi
 # Получаем список текущих подключённых IP
 CONNECTED_IPS=$(ss -tan | awk -v port=":$PORT" '$5 ~ port {print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
 
+# Если нет подключённых IP, выводим сообщение и выходим
+if [[ -z "$CONNECTED_IPS" ]]; then
+    echo "Нет подключённых IP по порту $PORT."
+    exit 0
+fi
+
 # Обновляем данные в логе
 for IP in $CONNECTED_IPS; do
     # Если IP уже в логе, обновляем время подключения
