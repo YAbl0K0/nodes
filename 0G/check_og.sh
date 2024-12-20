@@ -33,6 +33,10 @@ done < "$LOG_FILE"
 # Получаем список подключённых IP
 ACTIVE_IPS=$(ss -tn | grep ":$PORT" | awk '{print $5}' | cut -d':' -f1 | sort -u)
 
+# Отладка: вывести содержимое переменной ACTIVE_IPS
+echo "ACTIVE_IPS содержимое:"
+echo "$ACTIVE_IPS"
+
 # Проверяем, есть ли активные подключения
 if [[ -z "$ACTIVE_IPS" ]]; then
     echo "Нет подключённых IP по порту $PORT."
@@ -45,8 +49,12 @@ grep -v '^$' "$IP_LIST" > /tmp/filtered_ip_list.txt
 # Обновляем лог времени подключения
 echo "Подключённые IP и общее время подключения:"
 while IFS= read -r IP; do
+    # Отладка: вывести текущий IP
+    echo "Проверяем IP: $IP"
+
     # Проверяем корректность IP
     if [[ -z "$IP" ]]; then
+        echo "Пропуск пустой строки."
         continue
     fi
 
@@ -61,6 +69,8 @@ while IFS= read -r IP; do
             echo "$IP подключён впервые."
         fi
         CONNECTED_IPS["$IP"]=$CURRENT_TIME
+    else
+        echo "$IP не найден среди активных."
     fi
 done < /tmp/filtered_ip_list.txt
 
