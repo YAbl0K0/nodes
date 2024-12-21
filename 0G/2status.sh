@@ -19,8 +19,8 @@ if [[ ! -f $LOG_FILE ]]; then
     echo "Лог-файл $LOG_FILE создан."
 fi
 
-# Получаем список подключённых IP с помощью netstat
-RAW_OUTPUT=$(netstat -tan | grep ":$PORT")
+# Получаем список подключённых IPv4-адресов с помощью netstat
+RAW_OUTPUT=$(netstat -tan | grep ":$PORT" | grep -E "tcp.*ESTABLISHED")
 
 # Если вывод пустой, значит подключений нет
 if [[ -z "$RAW_OUTPUT" ]]; then
@@ -30,17 +30,17 @@ if [[ -z "$RAW_OUTPUT" ]]; then
     exit 0
 fi
 
-# Извлекаем IP-адреса из вывода netstat
-CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $5}' | cut -d':' -f1 | sed 's/^::ffff://g' | sort -u)
+# Извлекаем только IPv4-адреса
+CONNECTED_IPS=$(echo "$RAW_OUTPUT" | awk '{print $5}' | grep -Eo '([0-9]{1,3}\.){3}[0-9]{1,3}' | sort -u)
 
 # Проверяем, удалось ли извлечь IP
 if [[ -z "$CONNECTED_IPS" ]]; then
-    echo "Не удалось извлечь IP-адреса из данных."
+    echo "Не удалось извлечь IPv4-адреса из данных."
     exit 1
 fi
 
 # Печатаем извлечённые IP
-echo "Извлечённые IP-адреса:"
+echo "Извлечённые IPv4-адреса:"
 echo "$CONNECTED_IPS"
 
 # Обновляем данные в логе
