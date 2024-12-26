@@ -27,7 +27,7 @@ while 1 {
         "If you wish to set an explicit internal IP, enter an IPv4 address (default=auto):" {send "\r"; exp_continue}
         "This allows p2p communication between nodes. Enter the first port (1025-65536) for p2p communication (default 9001):" {send "\r"; exp_continue}
         "Enter the second port (1025-65536) for p2p communication (default 10001):" {send "\r"; exp_continue}
-        "Enter the password for accessing the Dashboard:" {send "111QwErTy*\r"; exp_continue}
+        -re ".*password.*Dashboard.*:" {send "111QwErTy*\r"; exp_continue}
         eof {break}
     }
 }
