@@ -7,12 +7,12 @@ docker rm -f shardeum-dashboard
 apt install expect -y
 bash <(curl -s https://raw.githubusercontent.com/DOUBLE-TOP/tools/main/main.sh)
 bash <(curl -s https://raw.githubusercontent.com/DOUBLE-TOP/tools/main/docker.sh)
-curl -O https://raw.githubusercontent.com/shardeum/shardeum-validator/refs/heads/itn4/install.sh && chmod +x installer.sh
+curl -O https://raw.githubusercontent.com/shardeum/shardeum-validator/refs/heads/itn4/install.sh && chmod +x install.sh
 
 expect -c '
 set timeout 5
 
-spawn ./installer.sh
+spawn ./install.sh
 while 1 {
 
     expect {
@@ -30,7 +30,7 @@ while 1 {
 }
 '
 
-rm ./installer.sh
+rm ./install.sh
 source $HOME/.shardeum/.env
 cd $HOME
 docker exec -i shardeum-dashboard operator-cli start
