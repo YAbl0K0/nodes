@@ -1,5 +1,8 @@
 #!/bin/bash
 
+cd $HOME
+docker exec -i shardeum-dashboard operator-cli stop
+
 docker image prune -a -f
 docker volume prune -f
 docker rm -f shardeum-dashboard
