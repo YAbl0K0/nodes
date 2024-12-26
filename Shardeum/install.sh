@@ -36,6 +36,6 @@ while 1 {
 rm ./install.sh
 source $HOME/.shardeum/.env
 cd $HOME
-docker exec -i shardeum-dashboard operator-cli start
+docker exec -i shardeum-validator operator-cli start
 
 echo -e "\033[1;31;40mShardeum установлен. Проверь количество токенов в explorer-sphinx.shardeum.org и делай стейк!\033[m"
