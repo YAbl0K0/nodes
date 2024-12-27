@@ -24,8 +24,12 @@ else
     echo "Текущее значение lockedStake: $LOCKED_STAKE"
 fi
 
+# Удаление существующей tmux-сессии
+if tmux has-session -t $SESSION_NAME 2>/dev/null; then
+    tmux kill-session -t $SESSION_NAME
+fi
+
 # Запуск tmux-сессии
-tmux kill-session -t $SESSION_NAME 2>/dev/null
 tmux new-session -d -s $SESSION_NAME
 
 # Выполнение команд в tmux
