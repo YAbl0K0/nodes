@@ -8,7 +8,7 @@ then
 fi
 
 # Запрос приватного ключа
-read -s -p "Введите приватный ключ от тестнет кошелька Shardeum: " PRIVATE_KEY
+read -p "Введите приватный ключ от тестнет кошелька Shardeum: " PRIVATE_KEY
 echo ""
 
 # Название tmux-сессии
