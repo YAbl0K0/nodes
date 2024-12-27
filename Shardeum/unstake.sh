@@ -18,7 +18,7 @@ SESSION_NAME="shardeum_unstake"
 LOCKED_STAKE=$(docker exec -i shardeum-validator operator-cli status | grep "lockedStake:" | awk '{print $2}' | tr -d "'")
 
 if [[ -z "$LOCKED_STAKE" || "$LOCKED_STAKE" == "0.0" ]]; then
-    echo "lockedStake не найден или равен 0. Выполняется анстейк 10."
+    echo "Делаю анстейк с другой ноды"
     LOCKED_STAKE=10
 else
     echo "Текущее значение lockedStake: $LOCKED_STAKE"
