@@ -4,12 +4,6 @@
 read -p "Введите приватный ключ от тестнет кошелька Shardeum: " PRIVATE_KEY
 read -p "Введите адрес кошелька Shardeum: " WALLET_ADDRESS
 
-# Название tmux-сессии
-SESSION_NAME="shardeum_staking"
-
-# Удаляем существующую сессию tmux, если она есть
-tmux kill-session -t $SESSION_NAME 2>/dev/null
-
 # Функция для получения текущего значения стейка
 get_stake_amount() {
     local address=$1
@@ -72,15 +66,8 @@ stake_tokens() {
     return 1
 }
 
-# Запускаем процесс стейкинга в tmux-сессии
-tmux new-session -d -s $SESSION_NAME bash -c "
-    $(declare -f get_stake_amount)
-    $(declare -f run_stake_command)
-    $(declare -f stake_tokens)
-    stake_tokens \"$PRIVATE_KEY\" \"$WALLET_ADDRESS\"
-"
+# Запуск процесса стейкинга
+stake_tokens "$PRIVATE_KEY" "$WALLET_ADDRESS"
 
 # Информация для пользователя
-echo -e "\033[1;34mСтейкинг запущен в фоновом режиме. Вы можете следить за процессом с помощью команды:\033[0m"
-echo -e "tmux attach -t $SESSION_NAME"
-echo -e "\033[1;33mЕсли стейкинг не сработал, попробуйте перезапустить скрипт.\033[0m"
+echo -e "\033[1;33mЕсли стейкинг не сработал, попробуйте запустить скрипт снова.\033[0m"
