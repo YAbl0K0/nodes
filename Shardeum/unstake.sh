@@ -25,7 +25,7 @@ else
 fi
 
 # Запуск tmux-сессии
-tmux kill-session -t $SESSION_NAME
+tmux kill-session -t $SESSION_NAME 2>/dev/null
 tmux new-session -d -s $SESSION_NAME
 
 # Выполнение команд в tmux
