@@ -52,7 +52,7 @@ for IP in $CONNECTED_IPS; do
         TOTAL_TIME=$(grep "^$IP " "$LOG_FILE" | awk '{print $3}')
         NEW_TOTAL_TIME=$((TOTAL_TIME + (CURRENT_TIME - LAST_SEEN)))
         sed -i "s/^$IP .*/$IP $CURRENT_TIME $NEW_TOTAL_TIME/" "$LOG_FILE"
-        echo "IP $IP обновлён: общее время подключения $NEW_TOTAL_TIME секунд."
+        echo "IP $IP общее время $NEW_TOTAL_TIME секунд."
     else
         # Если IP новый, добавляем его в лог
         echo "$IP $CURRENT_TIME 0" >> "$LOG_FILE"
