@@ -17,7 +17,8 @@ mkdir -p evd_addr && cd evd_addr
 wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 
 # Запрашиваем количество кошельков у пользователя
-read -p "Сколько кошельков создать? (По умолчанию: 25): " num_wallets
+echo -n "Сколько кошельков создать? (По умолчанию: 25): "
+read num_wallets
 
 # Если пользователь ничего не ввел, используем значение по умолчанию
 num_wallets=${num_wallets:-25}
