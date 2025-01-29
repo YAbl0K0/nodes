@@ -16,8 +16,14 @@ mkdir -p evd_addr && cd evd_addr
 # Скачиваем wallets.py
 wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 
-# Запускаем wallets.py (пользователь вводит данные во время выполнения)
-python wallets.py
+# Запрашиваем количество кошельков у пользователя
+read -p "Сколько кошельков создать? (По умолчанию: 25): " num_wallets
+
+# Если пользователь ничего не ввел, используем значение по умолчанию
+num_wallets=${num_wallets:-25}
+
+# Запускаем wallets.py с передачей параметра
+python wallets.py "$num_wallets"
 
 # Удаляем wallets.py
 rm -f wallets.py
