@@ -24,10 +24,20 @@ read num_wallets
 num_wallets=${num_wallets:-25}
 
 # Запускаем wallets.py с передачей параметра
-python wallets.py "$num_wallets"
+python wallets.py "$num_wallets" &
 
-# Удаляем wallets.py
+# Запоминаем PID процесса
+PID=$!
+
+# Ждём 60 секунд
+sleep 60
+
+# Убиваем процесс (если всё ещё работает) и удаляем файл
+kill $PID 2>/dev/null || true
 rm -f wallets.py
+
+# Чистим экран
+clear
 
 deactivate
 cd ..
