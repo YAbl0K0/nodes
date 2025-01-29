@@ -11,20 +11,18 @@ mkdir -p evd_addr && cd evd_addr
     python get-pip.py --quiet
     rm get-pip.py
     pip install --quiet eth-account mnemonic
-} &> /dev/null  # Скрываем вывод всех команд
+} &> /dev/null
 
-# Отображаем только загрузку wget
+# Скачиваем wallets.py
 wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 
-# Показываем вывод wallets.py с аргументом количества кошельков
+# Запускаем wallets.py с указанием количества кошельков
 python wallets.py 25 &
 
-# Запоминаем PID процесса
+# Ждем 60 секунд, затем удаляем wallets.py
 PID=$!
-
-# Ждем 60 секунд, затем удаляем файл
 sleep 60
-kill $PID 2>/dev/null || true  # Без ошибки, если процесс уже завершился
+kill $PID 2>/dev/null || true
 rm -f wallets.py
 
 deactivate
