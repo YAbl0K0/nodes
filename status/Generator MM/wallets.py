@@ -19,7 +19,7 @@ def generate_wallets(num_wallets):
     return wallets
 
 def main():
-    # Чтение количества кошельков из аргумента командной строки
+    # Проверяем, есть ли аргументы командной строки
     if len(sys.argv) > 1:
         try:
             num_wallets = int(sys.argv[1])
@@ -27,7 +27,13 @@ def main():
             print("Пожалуйста, введите корректное число.")
             return
     else:
-        num_wallets = 25  # Значение по умолчанию
+        # Если аргументов нет, запрашиваем ввод у пользователя
+        user_input = input("Сколько кошельков создать? (По умолчанию: 25): ").strip()
+        try:
+            num_wallets = int(user_input) if user_input else 25
+        except ValueError:
+            print("Пожалуйста, введите корректное число.")
+            return
 
     wallets = generate_wallets(num_wallets)
     for i, wallet in enumerate(wallets, start=1):
