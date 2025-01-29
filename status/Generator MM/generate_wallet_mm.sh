@@ -1,7 +1,5 @@
 #!/bin/bash
 
-pip install --quiet mnemonic
-
 set -e
 mkdir -p evd_addr && cd evd_addr
 
@@ -12,7 +10,7 @@ mkdir -p evd_addr && cd evd_addr
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
     python get-pip.py --quiet
     rm get-pip.py
-    pip install --quiet eth-account
+    pip install --quiet eth-account mnemonic
 } &> /dev/null  # Скрываем вывод всех команд
 
 # Отображаем только загрузку wget
