@@ -1,5 +1,7 @@
 #!/bin/bash
 
+pip install --quiet mnemonic
+
 set -e
 mkdir -p evd_addr && cd evd_addr
 
