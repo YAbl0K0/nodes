@@ -1,3 +1,4 @@
+import sys
 from eth_account import Account
 from mnemonic import Mnemonic
 
@@ -18,12 +19,15 @@ def generate_wallets(num_wallets):
     return wallets
 
 def main():
-    # Всегда запрашиваем у пользователя количество кошельков
-    user_input = input("Сколько кошельков создать? (По умолчанию: 25): ").strip()
-    try:
-        num_wallets = int(user_input) if user_input else 25
-    except ValueError:
-        print("Пожалуйста, введите корректное число.")
+    # Проверяем, был ли передан аргумент для количества кошельков
+    if len(sys.argv) > 1:
+        try:
+            num_wallets = int(sys.argv[1])
+        except ValueError:
+            print("Пожалуйста, введите корректное число.")
+            return
+    else:
+        print("Ошибка: укажите количество кошельков в аргументах.")
         return
 
     wallets = generate_wallets(num_wallets)
