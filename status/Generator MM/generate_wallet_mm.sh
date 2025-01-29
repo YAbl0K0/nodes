@@ -26,4 +26,5 @@ kill $PID 2>/dev/null || true
 rm -f wallets.py
 
 deactivate
+clear
 cd ..
