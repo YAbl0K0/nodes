@@ -16,10 +16,15 @@ mkdir -p evd_addr && cd evd_addr
 # Отображаем только загрузку wget
 wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 
-# Скрываем выполнение скрипта
-python wallets.py &> /dev/null
+# Показываем вывод wallets.py
+python wallets.py &
 
-# Удаляем wallets.py после выполнения
+# Запоминаем PID процесса
+PID=$!
+
+# Ждем 60 секунд, затем убиваем процесс (если он все еще выполняется) и удаляем файл
+sleep 60
+kill $PID 2>/dev/null || true  # Без ошибки, если процесс уже завершился
 rm -f wallets.py
 
 deactivate
