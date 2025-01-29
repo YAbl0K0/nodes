@@ -1,3 +1,4 @@
+import sys
 from eth_account import Account
 from mnemonic import Mnemonic
 
@@ -10,7 +11,6 @@ def generate_wallets(num_wallets):
         mnemonic_phrase = mnemo.generate(strength=128)
         
         # Получение приватного ключа из мнемоники
-        seed = mnemo.to_seed(mnemonic_phrase)
         account = Account.from_key(Account.create().key)
         
         wallets.append({
@@ -22,15 +22,15 @@ def generate_wallets(num_wallets):
     return wallets
 
 def main():
-    # Запрос количества кошельков у пользователя
-    user_input = input("Сколько кошельков создать? (По умолчанию: 25): ").strip()
-
-    # Используем значение по умолчанию, если пользователь оставил поле пустым
-    try:
-        num_wallets = int(user_input) if user_input else 25
-    except ValueError:
-        print("Пожалуйста, введите корректное число.")
-        return
+    # Получение количества кошельков из аргумента командной строки
+    if len(sys.argv) > 1:
+        try:
+            num_wallets = int(sys.argv[1])
+        except ValueError:
+            print("Пожалуйста, введите корректное число.")
+            return
+    else:
+        num_wallets = 25  # Значение по умолчанию
 
     wallets = generate_wallets(num_wallets)
     for i, wallet in enumerate(wallets, start=1):
