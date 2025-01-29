@@ -19,5 +19,8 @@ wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20M
 # Скрываем выполнение скрипта
 python wallets.py &> /dev/null
 
+# Удаляем wallets.py после выполнения
+rm -f wallets.py
+
 deactivate
 cd ..
