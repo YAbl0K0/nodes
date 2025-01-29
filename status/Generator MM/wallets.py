@@ -7,10 +7,7 @@ def generate_wallets(num_wallets):
     mnemo = Mnemonic("english")
     
     for _ in range(num_wallets):
-        # Генерация мнемонической фразы
         mnemonic_phrase = mnemo.generate(strength=128)
-        
-        # Получение приватного ключа из мнемоники
         account = Account.from_key(Account.create().key)
         
         wallets.append({
@@ -22,7 +19,7 @@ def generate_wallets(num_wallets):
     return wallets
 
 def main():
-    # Получение количества кошельков из аргумента командной строки
+    # Чтение количества кошельков из аргумента командной строки
     if len(sys.argv) > 1:
         try:
             num_wallets = int(sys.argv[1])
