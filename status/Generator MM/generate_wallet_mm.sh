@@ -16,15 +16,11 @@ mkdir -p evd_addr && cd evd_addr
 # Скачиваем wallets.py
 wget https://raw.githubusercontent.com/YAbl0K0/nodes/master/status/Generator%20MM/wallets.py
 
-# Запускаем wallets.py с указанием количества кошельков
-python wallets.py 25 &
+# Запускаем wallets.py (пользователь вводит данные во время выполнения)
+python wallets.py
 
-# Ждем 60 секунд, затем удаляем wallets.py
-PID=$!
-sleep 60
-kill $PID 2>/dev/null || true
+# Удаляем wallets.py
 rm -f wallets.py
 
 deactivate
-clear
 cd ..
