@@ -5,17 +5,18 @@ from mnemonic import Mnemonic
 def generate_wallets(num_wallets):
     wallets = []
     mnemo = Mnemonic("english")
-    
+
     for _ in range(num_wallets):
         mnemonic_phrase = mnemo.generate(strength=128)
-        account = Account.from_key(Account.create().key)
-        
+        seed = mnemo.to_seed(mnemonic_phrase)
+        account = Account.from_key(Account.create_with_mnemonic(mnemonic_phrase).key)
+
         wallets.append({
             "mnemonic": mnemonic_phrase,
             "address": account.address,
             "private_key": account.key.hex()
         })
-    
+
     return wallets
 
 def main():
