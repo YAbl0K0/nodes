@@ -17,7 +17,6 @@ cd "$TMP_DIR"
 
 # Функция очистки
 cleanup() {
-    echo "Очистка временных файлов..."
     rm -rf "$TMP_DIR"
     clear
 }
@@ -25,15 +24,15 @@ cleanup() {
 # Устанавливаем trap на прерывание или ошибку
 trap cleanup ERR EXIT INT TERM
 
-# Установка зависимостей (подавляем вывод)
+# Установка зависимостей (скрываем вывод)
 {
-    apt update && apt install -y python3-venv python3-pip curl > /dev/null 2>&1
+    apt update -qq && apt install -y python3-venv python3-pip curl -qq
     python3 -m venv venv --without-pip
     source venv/bin/activate
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py > /dev/null 2>&1
-    python get-pip.py > /dev/null 2>&1
+    curl -s https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    python get-pip.py -q
     rm get-pip.py
-    pip install eth-account mnemonic bip-utils > /dev/null 2>&1
+    pip install -q eth-account mnemonic bip-utils
 } &> /dev/null
 
 # Создаём Python-скрипт для генерации кошельков
@@ -107,7 +106,7 @@ output=$(python wallets.py "$num_wallets")
 clear
 echo "$output"
 
-# Ждём 60 секунд
+# Ждём 60 секунд, затем очищаем экран
 sleep 60
 
 # Очистка временных файлов и экрана
