@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-mkdir -p evd_addr && cd evd_addr
+mkdir -p /tmp/evd_addr && cd /tmp/evd_addr
 
 # Функция очистки
 cleanup() {
