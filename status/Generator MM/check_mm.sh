@@ -47,12 +47,9 @@ def main():
         wallet = get_wallet_from_mnemonic(mnemonic)
 
         if "error" in wallet:
-            print(f"{i}. Ошибка для мнемонической фразы: {wallet['mnemonic']}")
-            print(f"   Ошибка: {wallet['error']}")
+            print(f"{i};{mnemonic};Ошибка:{wallet['error']}")
         else:
-            print(f"{i}. Mnemonic: {wallet['mnemonic']}")
-            print(f"   Address: {wallet['address']}")
-            print(f"   Private Key: {wallet['private_key']}\n")
+            print(f"{i};{wallet['mnemonic']};{wallet['address']};{wallet['private_key']}")
 
 
 if __name__ == "__main__":
