@@ -1,3 +1,18 @@
+#!/bin/bash
+
+set -e
+
+# Файл с сид-фразами
+MNEMONIC_FILE="mnemonics.txt"
+
+# Проверяем, существует ли файл с мнемониками
+if [ ! -f "$MNEMONIC_FILE" ]; then
+    echo "Ошибка: Файл $MNEMONIC_FILE не найден. Создайте файл с сид-фразами по одной на строку."
+    exit 1
+fi
+
+# Создаём Python-скрипт для проверки сид-фраз
+cat << 'EOF' > check_wallets.py
 from eth_account import Account
 from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins, Bip44Changes
 
@@ -38,7 +53,6 @@ def main():
         print(f"Файл {input_file} не найден. Убедитесь, что он находится в текущей директории.")
         return
 
-    print("Проверяем мнемонические фразы...\n")
     for i, mnemonic in enumerate(mnemonics, start=1):
         mnemonic = mnemonic.strip()
         if not mnemonic:
@@ -54,3 +68,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+EOF
+
+# Запускаем Python-скрипт
+python3 check_wallets.py
+
+# Удаляем временный Python-скрипт
+rm -f check_wallets.py
