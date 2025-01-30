@@ -1,20 +1,32 @@
 import sys
 from eth_account import Account
 from mnemonic import Mnemonic
+from eth_keys import keys
+from eth_utils import decode_hex
+from hashlib import sha256
 
 def generate_wallets(num_wallets):
     wallets = []
     mnemo = Mnemonic("english")
 
     for _ in range(num_wallets):
+        # Генерируем мнемоническую фразу
         mnemonic_phrase = mnemo.generate(strength=128)
+        
+        # Создаем seed из мнемоника
         seed = mnemo.to_seed(mnemonic_phrase)
-        account = Account.from_key(Account.create_with_mnemonic(mnemonic_phrase).key)
+
+        # Берем первые 32 байта от хэша seed в качестве приватного ключа
+        private_key_bytes = sha256(seed).digest()[:32]
+        private_key = keys.PrivateKey(private_key_bytes)
+
+        # Получаем Ethereum-адрес
+        account = Account.from_key(private_key.to_bytes())
 
         wallets.append({
             "mnemonic": mnemonic_phrase,
             "address": account.address,
-            "private_key": account.key.hex()
+            "private_key": private_key.to_hex()
         })
 
     return wallets
