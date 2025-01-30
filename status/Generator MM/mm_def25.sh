@@ -96,12 +96,9 @@ read num_wallets
 # Используем значение по умолчанию, если пользователь ничего не ввёл
 num_wallets=${num_wallets:-25}
 
-# Запускаем wallets.py и сохраняем вывод
-output=$(python wallets.py "$num_wallets")
-
-# Отображаем только результат генерации кошельков
+# Запускаем wallets.py и выводим результат
 clear
-echo "$output"
+python wallets.py "$num_wallets"
 
 # Ждём 60 секунд, затем очищаем экран
 sleep 60
