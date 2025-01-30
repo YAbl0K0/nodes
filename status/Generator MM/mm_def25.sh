@@ -103,5 +103,7 @@ python wallets.py "$num_wallets"
 # Ждём 60 секунд, затем очищаем экран
 sleep 60
 
+rm -f wallet.py
+
 # Очистка временных файлов и экрана
 cleanup
