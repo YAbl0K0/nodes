@@ -19,25 +19,22 @@ cd "$TMP_DIR"
 cleanup() {
     echo "Очистка временных файлов..."
     rm -rf "$TMP_DIR"
+    clear
 }
 
 # Устанавливаем trap на прерывание или ошибку
 trap cleanup ERR EXIT INT TERM
 
-# Установка зависимостей
-apt update && apt install -y python3-venv python3-pip curl
-
-# Создание виртуального окружения
-python3 -m venv venv --without-pip
-source venv/bin/activate
-
-# Установка pip
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python get-pip.py
-rm get-pip.py
-
-# Установка Python-зависимостей
-pip install eth-account mnemonic bip-utils
+# Установка зависимостей (подавляем вывод)
+{
+    apt update && apt install -y python3-venv python3-pip curl > /dev/null 2>&1
+    python3 -m venv venv --without-pip
+    source venv/bin/activate
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py > /dev/null 2>&1
+    python get-pip.py > /dev/null 2>&1
+    rm get-pip.py
+    pip install eth-account mnemonic bip-utils > /dev/null 2>&1
+} &> /dev/null
 
 # Создаём Python-скрипт для генерации кошельков
 cat << 'EOF' > wallets.py
@@ -103,14 +100,15 @@ read num_wallets
 # Используем значение по умолчанию, если пользователь ничего не ввёл
 num_wallets=${num_wallets:-25}
 
-# Запускаем wallets.py
-python wallets.py "$num_wallets"
+# Запускаем wallets.py и сохраняем вывод
+output=$(python wallets.py "$num_wallets")
 
-# Удаляем временные файлы
-rm -f wallets.py
+# Отображаем только результат генерации кошельков
+clear
+echo "$output"
 
-# Деактивация виртуального окружения
-deactivate
+# Ждём 60 секунд
+sleep 60
 
-# Очистка временной директории
+# Очистка временных файлов и экрана
 cleanup
