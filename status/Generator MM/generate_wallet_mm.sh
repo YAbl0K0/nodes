@@ -3,6 +3,16 @@
 set -e
 mkdir -p evd_addr && cd evd_addr
 
+# Функция очистки
+cleanup() {
+    echo "Очистка всех временных файлов..."
+    rm -rf "$(pwd)"
+    cd ..
+}
+
+# Если скрипт прерывается (CTRL+C) или завершается с ошибкой, очищаем всё
+trap cleanup ERR EXIT INT TERM
+
 {
     apt update && apt install -y python3-venv python3-pip curl
     python3 -m venv venv --without-pip
