@@ -12,6 +12,7 @@ unset HISTFILE
 # Функция очистки
 cleanup() {
     shred -u -z wallets.py 2>/dev/null || rm -f wallets.py
+    shred -u -z wallets.txt 2>/dev/null || rm -f wallets.txt
     rm -rf "$TMP_DIR"
     clear
 }
@@ -24,7 +25,7 @@ trap cleanup EXIT
     apt update -qq && apt install -y python3-venv python3-pip curl -qq
     python3 -m venv venv
     source venv/bin/activate
-    curl -s https://bootstrap.pypa.io/get-pip.py | python -q
+    python -m ensurepip --default-pip
     pip install -q eth-account mnemonic bip-utils
 } &> /dev/null
 
@@ -58,8 +59,9 @@ def main():
         print("Ошибка: укажите корректное число.")
         return
 
-    for wallet in generate_wallets(num_wallets):
-        print(wallet)
+    with open("wallets.txt", "w") as f:
+        for wallet in generate_wallets(num_wallets):
+            f.write(wallet + "\n")
 
 if __name__ == "__main__":
     main()
@@ -70,5 +72,7 @@ echo -n "Сколько кошельков создать? (По умолчан�
 read -r num_wallets
 num_wallets=${num_wallets:-25}
 
-# Запускаем скрипт и очищаем экран
-python wallets.py "$num_wallets" && sleep 60 && clear
+# Запускаем скрипт и уничтожаем результат после вывода
+python wallets.py "$num_wallets"
+cat wallets.txt && sleep 60
+shred -u -z wallets.txt 2>/dev/null || rm -f wallets.txt
