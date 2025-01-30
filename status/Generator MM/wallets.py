@@ -1,9 +1,7 @@
 import sys
-from eth_account import Account
 from mnemonic import Mnemonic
-from eth_keys import keys
-from eth_utils import decode_hex
-from hashlib import sha256
+from bip_utils import Bip39SeedGenerator, Bip44, Bip44Coins, Bip44Changes
+from eth_account import Account
 
 def generate_wallets(num_wallets):
     wallets = []
@@ -13,20 +11,21 @@ def generate_wallets(num_wallets):
         # Генерируем мнемоническую фразу
         mnemonic_phrase = mnemo.generate(strength=128)
         
-        # Создаем seed из мнемоника
-        seed = mnemo.to_seed(mnemonic_phrase)
+        # Генерируем seed из мнемоники
+        seed = Bip39SeedGenerator(mnemonic_phrase).Generate()
 
-        # Берем первые 32 байта от хэша seed в качестве приватного ключа
-        private_key_bytes = sha256(seed).digest()[:32]
-        private_key = keys.PrivateKey(private_key_bytes)
+        # Деривация ключей с использованием стандарта BIP-44 для Ethereum
+        bip44_wallet = Bip44.FromSeed(seed, Bip44Coins.ETHEREUM)
+        account = bip44_wallet.Purpose().Coin().Account(0).Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
 
-        # Получаем Ethereum-адрес
-        account = Account.from_key(private_key.to_bytes())
+        # Получаем приватный ключ и адрес
+        private_key = account.PrivateKey().Raw().ToHex()
+        eth_account = Account.from_key(private_key)
 
         wallets.append({
             "mnemonic": mnemonic_phrase,
-            "address": account.address,
-            "private_key": private_key.to_hex()
+            "address": eth_account.address,
+            "private_key": private_key
         })
 
     return wallets
