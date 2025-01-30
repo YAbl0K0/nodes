@@ -82,11 +82,8 @@ def main():
         return
 
     wallets = generate_wallets(num_wallets)
-    for i, wallet in enumerate(wallets, start=1):
-        print(f"Wallet {i}:")
-        print(f"  Mnemonic: {wallet['mnemonic']}")
-        print(f"  Address: {wallet['address']}")
-        print(f"  Private Key: {wallet['private_key']}\n")
+    for wallet in wallets:
+        print(f"{wallet['mnemonic']};{wallet['address']};{wallet['private_key']}")
 
 if __name__ == "__main__":
     main()
