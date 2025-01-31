@@ -13,6 +13,7 @@ unset HISTFILE
 cleanup() {
     shred -u -z wallets.py 2>/dev/null || rm -f wallets.py
     shred -u -z wallets.txt 2>/dev/null || rm -f wallets.txt
+    history -c && history -w
     rm -rf "$TMP_DIR"
     clear
 }
