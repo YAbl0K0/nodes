@@ -11,16 +11,25 @@ assert w3.is_connected(), "Ошибка: Не удалось подключит�
 
 def get_eth_balance(address):
     """Получает баланс MNT (ETH)"""
-    balance = w3.eth.get_balance(address)
-    return w3.from_wei(balance, 'ether')
+    try:
+        balance = w3.eth.get_balance(address)
+        return w3.from_wei(balance, 'ether')
+    except Exception as e:
+        print(f"Ошибка получения MNT для {address}: {e}")
+        return 0
 
 def get_token_balance(address):
     """Получает баланс токенов"""
-    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
-        {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
-    ])
-    balance = contract.functions.balanceOf(address).call()
-    return balance / (10 ** TOKEN_DECIMALS)
+    try:
+        contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
+            {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
+             "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
+        ])
+        balance = contract.functions.balanceOf(address).call()
+        return balance / (10 ** TOKEN_DECIMALS)
+    except Exception as e:
+        print(f"Ошибка получения токенов для {address}: {e}")
+        return 0
 
 def check_balances():
     """Читает адреса из файла и выводит баланс в формате Адрес; Баланс MNT; Баланс Токенов"""
@@ -32,8 +41,8 @@ def check_balances():
     for address in addresses:
         address = address.strip()
         eth_balance = get_eth_balance(address)
-        token_balance = get_token_balance(address)
-        print(f"{address}; {eth_balance}; {token_balance}")
+        token_balance = get_token_balance(address)  # Теперь всегда определена!
+        print(f"{address}; {eth_balance}; CAI {token_balance}")
 
 if __name__ == "__main__":
     check_balances()
