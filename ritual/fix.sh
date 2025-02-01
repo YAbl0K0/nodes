@@ -1,5 +1,9 @@
 #!/bin/bash
 
+sudo systemctl restart docker
+docker container prune -f
+docker compose -f $HOME/infernet-container-starter/deploy/docker-compose.yaml down
+
 cd foundry
 curl -L https://foundry.paradigm.xyz | bash
 source ~/.bashrc
