@@ -64,7 +64,7 @@ def check_balances():
 
         eth_balance = get_eth_balance(checksum_address)
         token_balance = get_token_balance(checksum_address)
-        print(f"{checksum_address}; {eth_balance}; CAI {token_balance}")
+        print(f"{checksum_address}; {eth_balance}; {token_balance}")
 
 if __name__ == "__main__":
     check_balances()
