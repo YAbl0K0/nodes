@@ -35,7 +35,7 @@ def send_tokens(private_key, sender, recipient, amount):
     tx = contract.functions.transfer(recipient, token_amount).build_transaction({
         'from': sender,
         'nonce': nonce,
-        'gas': 200000,
+        'gas': 300000,
         'gasPrice': w3.to_wei(GAS_PRICE_GWEI, 'gwei'),
         'chainId': CHAIN_ID
     })
