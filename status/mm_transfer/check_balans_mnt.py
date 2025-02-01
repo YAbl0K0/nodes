@@ -46,7 +46,7 @@ def check_balances():
     for address in addresses:
         address = address.strip()
         eth_balance = get_eth_balance(address)
-        print(f"{address}; {eth_balance}")
+        print(f"{address}; {eth_balance}; CAI {token_balance}"")
 
 if __name__ == "__main__":
     check_balances()
