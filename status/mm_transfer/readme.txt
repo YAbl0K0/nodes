@@ -25,3 +25,11 @@ if tx["from"].lower() == address:
 
 Искать только входящие:
 if tx["to"] and tx["to"].lower() == address:
+
+
+
+
+Мантл
+ОпБнб
+Арбитрум
+Оптимизм
