@@ -9,10 +9,21 @@ TOKEN_DECIMALS = 18  # Количество десятичных знаков т
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Mantle!"
 
+def to_checksum(address):
+    """Приводит адрес к checksum-формату или возвращает None при ошибке"""
+    try:
+        return Web3.to_checksum_address(address)
+    except:
+        print(f"❌ Ошибка: {address} не является корректным Ethereum-адресом.")
+        return None
+
 def get_eth_balance(address):
     """Получает баланс MNT (ETH) с учетом checksum-формата"""
+    address = to_checksum(address)
+    if not address:
+        return 0  # Если адрес некорректный, возвращаем 0
+
     try:
-        address = Web3.to_checksum_address(address)  # Приведение к checksum
         balance = w3.eth.get_balance(address)
         return w3.from_wei(balance, 'ether')
     except Exception as e:
@@ -21,8 +32,11 @@ def get_eth_balance(address):
 
 def get_token_balance(address):
     """Получает баланс токенов с учетом checksum-формата"""
+    address = to_checksum(address)
+    if not address:
+        return 0  # Если адрес некорректный, возвращаем 0
+
     try:
-        address = Web3.to_checksum_address(address)  # Приведение к checksum
         contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
             {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
              "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
@@ -42,13 +56,15 @@ def check_balances():
 
     for address in addresses:
         address = address.strip()
-        try:
-            address = Web3.to_checksum_address(address)  # Приведение к checksum
-            eth_balance = get_eth_balance(address)
-            token_balance = get_token_balance(address)
-            print(f"{address}; {eth_balance}; CAI {token_balance}")
-        except Exception as e:
-            print(f"❌ Ошибка обработки адреса {address}: {e}")
+        checksum_address = to_checksum(address)
+
+        if not checksum_address:
+            print(f"{address}; 0; 0")
+            continue
+
+        eth_balance = get_eth_balance(checksum_address)
+        token_balance = get_token_balance(checksum_address)
+        print(f"{checksum_address}; {eth_balance}; CAI {token_balance}")
 
 if __name__ == "__main__":
     check_balances()
