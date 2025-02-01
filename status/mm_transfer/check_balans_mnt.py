@@ -10,8 +10,9 @@ w3 = Web3(Web3.HTTPProvider(RPC_URL))
 assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Mantle!"
 
 def get_eth_balance(address):
-    """Получает баланс MNT (ETH)"""
+    """Получает баланс MNT (ETH) с учетом checksum-формата"""
     try:
+        address = Web3.to_checksum_address(address)  # Приведение к checksum
         balance = w3.eth.get_balance(address)
         return w3.from_wei(balance, 'ether')
     except Exception as e:
@@ -19,8 +20,9 @@ def get_eth_balance(address):
         return 0
 
 def get_token_balance(address):
-    """Получает баланс токенов"""
+    """Получает баланс токенов с учетом checksum-формата"""
     try:
+        address = Web3.to_checksum_address(address)  # Приведение к checksum
         contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
             {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
              "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
@@ -36,13 +38,17 @@ def check_balances():
     with open("wallet.txt", "r") as file:
         addresses = file.readlines()
     
-    print("Адрес; MNT; CAI")  # Заголовок
+    print("Адрес; Баланс MNT; Баланс Токенов")  # Заголовок
 
     for address in addresses:
         address = address.strip()
-        eth_balance = get_eth_balance(address)
-        token_balance = get_token_balance(address)  # Теперь всегда определена!
-        print(f"{address}; {eth_balance}; {token_balance}")
+        try:
+            address = Web3.to_checksum_address(address)  # Приведение к checksum
+            eth_balance = get_eth_balance(address)
+            token_balance = get_token_balance(address)
+            print(f"{address}; {eth_balance}; CAI {token_balance}")
+        except Exception as e:
+            print(f"❌ Ошибка обработки адреса {address}: {e}")
 
 if __name__ == "__main__":
     check_balances()
