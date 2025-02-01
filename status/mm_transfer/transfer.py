@@ -2,8 +2,8 @@ from web3 import Web3
 import time
 
 # Настройки сети Mantle
-RPC_URL = "rpc.mantle.xyz"  #RPC
-CHAIN_ID = 5000  #Chain ID
+RPC_URL = "https://rpc.mantle.xyz"  # Добавлен https:// для стабильности
+CHAIN_ID = 5000  # Chain ID Mantle
 GAS_LIMIT = 21000
 GAS_PRICE_GWEI = 1
 
@@ -13,7 +13,7 @@ TOKEN_DECIMALS = 18
 
 # Подключение к Web3
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
-assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети!"
+assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Mantle!"
 
 def get_eth_balance(address):
     balance = w3.eth.get_balance(address)
@@ -28,8 +28,8 @@ def get_token_balance(address):
 
 def send_eth(private_key, sender, recipient):
     balance = get_eth_balance(sender)
-    if balance > 0:
-        amount = balance - 0.0001  #запас на газ
+    if balance > 0.0001:
+        amount = balance - 0.0001  # Оставляем небольшой запас на газ
         nonce = w3.eth.get_transaction_count(sender)
         tx = {
             'to': recipient,
@@ -41,7 +41,9 @@ def send_eth(private_key, sender, recipient):
         }
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print(f"Отправлено {amount} ETH: {w3.to_hex(tx_hash)}")
+        print(f"✅ Отправлено {amount} ETH: {w3.to_hex(tx_hash)}")
+    else:
+        print(f"❌ Недостаточно ETH для отправки: {balance} ETH")
 
 def send_tokens(private_key, sender, recipient, amount):
     contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
@@ -58,28 +60,37 @@ def send_tokens(private_key, sender, recipient, amount):
     })
     signed_tx = w3.eth.account.sign_transaction(tx, private_key)
     tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    print(f"Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
+    print(f"✅ Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
 
 def main():
-    choice = input("Отправить все токены (1) или 0.1 токена (2)? ")
+    print("Выберите действие:")
+    print("1️⃣ Отправить все токены")
+    print("2️⃣ Отправить 0.1 токена")
+    print("3️⃣ Вывести баланс (без отправки)")
+    
+    choice = input("Ваш выбор (1/2/3): ")
+    
     with open("addresses.txt", "r") as file:
         lines = file.readlines()
-        
+    
     for line in lines:
         sender, private_key, recipient = line.strip().split(";")
         
         eth_balance = get_eth_balance(sender)
         token_balance = get_token_balance(sender)
-        print(f"Баланс {sender}: {eth_balance} ETH, {token_balance} токенов")
-        
-        send_eth(private_key, sender, recipient)  # Отправить весь ETH, оставляя запас на газ
+        print(f"📊 Баланс {sender}: {eth_balance} ETH, {token_balance} токенов")
         
         if choice == "1":
-            send_tokens(private_key, sender, recipient, token_balance)  # Отправить все токены
+            send_eth(private_key, sender, recipient)  # Отправка всего ETH
+            send_tokens(private_key, sender, recipient, token_balance)  # Отправка всех токенов
         elif choice == "2":
-            send_tokens(private_key, sender, recipient, 0.1)  # Отправить 0.1 токена
+            send_tokens(private_key, sender, recipient, 0.1)  # Отправка 0.1 токена
+        elif choice == "3":
+            print("✅ Баланс выведен, транзакции не отправляются.")
+        else:
+            print("❌ Неверный ввод. Попробуйте снова.")
         
-        time.sleep(5)  # Задержка между транзакциями
+        time.sleep(3)  # Задержка между запросами
 
 if __name__ == "__main__":
     main()
