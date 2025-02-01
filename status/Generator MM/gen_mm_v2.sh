@@ -22,6 +22,7 @@ cleanup() {
 trap cleanup EXIT
 
 # Установка зависимостей
+echo "Выполняется установка зависимостей, подождите 30 секунд..."
 {
     apt update -qq && apt install -y python3-venv python3-pip curl -qq
     python3 -m venv venv
