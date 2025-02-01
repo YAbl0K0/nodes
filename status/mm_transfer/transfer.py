@@ -4,7 +4,7 @@ import time
 # Настройки сети Mantle
 RPC_URL = "https://rpc.mantle.xyz"
 CHAIN_ID = 5000  # Chain ID Mantle
-GAS_LIMIT = 21000
+GAS_LIMIT = 300000
 GAS_PRICE_GWEI = 1
 
 # ERC-20 контракт токена
