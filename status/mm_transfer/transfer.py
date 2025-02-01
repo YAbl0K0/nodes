@@ -40,8 +40,9 @@ def send_tokens(private_key, sender, recipient, amount):
         'chainId': CHAIN_ID
     })
     signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)  # ✅ Исправлено
     print(f"✅ Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
+
 
 def main():
     """Главная функция"""
