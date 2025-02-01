@@ -78,7 +78,7 @@ def main():
         
         eth_balance = get_eth_balance(sender)
         token_balance = get_token_balance(sender)
-        print(f"📊 Баланс {sender}: {eth_balance} ETH, {token_balance} токенов")
+        print(f"{sender} {eth_balance} {token_balance}")
         
         if choice == "1":
             send_eth(private_key, sender, recipient)  # Отправка всего ETH
