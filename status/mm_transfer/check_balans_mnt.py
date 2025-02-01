@@ -2,51 +2,38 @@ from web3 import Web3
 
 # Подключение к сети Mantle
 RPC_URL = "https://rpc.mantle.xyz"
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
+ERC20_CONTRACT_ADDRESS = "0xF793Ac038E7688Aa3220005852836108cdDB065c"  # Контракт токена
+TOKEN_DECIMALS = 18  # Количество десятичных знаков токена
 
-# Проверка соединения
+# Устанавливаем соединение с RPC
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
 assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Mantle!"
 
 def get_eth_balance(address):
-    """Получает баланс MNT в ETH"""
+    """Получает баланс MNT (ETH)"""
     balance = w3.eth.get_balance(address)
     return w3.from_wei(balance, 'ether')
 
+def get_token_balance(address):
+    """Получает баланс токенов"""
+    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
+        {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf", "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
+    ])
+    balance = contract.functions.balanceOf(address).call()
+    return balance / (10 ** TOKEN_DECIMALS)
+
 def check_balances():
-    """Читает адреса из файла и выводит баланс в формате Адрес; Баланс"""
+    """Читает адреса из файла и выводит баланс в формате Адрес; Баланс MNT; Баланс Токенов"""
     with open("wallet.txt", "r") as file:
         addresses = file.readlines()
     
+    print("Адрес; Баланс MNT; Баланс Токенов")  # Заголовок
+
     for address in addresses:
         address = address.strip()
         eth_balance = get_eth_balance(address)
-        print(f"{address}; {eth_balance}")
-
-if __name__ == "__main__":
-    check_balances()
-from web3 import Web3
-
-# Подключение к сети Mantle
-RPC_URL = "https://rpc.mantle.xyz"
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
-
-# Проверка соединения
-assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Mantle!"
-
-def get_eth_balance(address):
-    """Получает баланс MNT в ETH"""
-    balance = w3.eth.get_balance(address)
-    return w3.from_wei(balance, 'ether')
-
-def check_balances():
-    """Читает адреса из файла и выводит баланс в формате Адрес; Баланс"""
-    with open("wallet.txt", "r") as file:
-        addresses = file.readlines()
-    
-    for address in addresses:
-        address = address.strip()
-        eth_balance = get_eth_balance(address)
-        print(f"{address}; {eth_balance}; CAI {token_balance}")
+        token_balance = get_token_balance(address)
+        print(f"{address}; {eth_balance}; {token_balance}")
 
 if __name__ == "__main__":
     check_balances()
