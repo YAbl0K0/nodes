@@ -30,19 +30,24 @@ def send_tokens(private_key, sender, recipient, amount):
         {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], 
          "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
     ])
+
     nonce = w3.eth.get_transaction_count(sender)
     token_amount = int(amount * (10 ** TOKEN_DECIMALS))
+
+    # Автоматическое определение лимита газа
+    estimated_gas = contract.functions.transfer(recipient, token_amount).estimate_gas({'from': sender}) + 10000
+
     tx = contract.functions.transfer(recipient, token_amount).build_transaction({
         'from': sender,
         'nonce': nonce,
-        'gas': 300000,
-        'gasPrice': w3.to_wei(GAS_PRICE_GWEI, 'gwei'),
+        'gas': estimated_gas,
+        'gasPrice': w3.eth.gas_price,  # Динамическая цена газа
         'chainId': CHAIN_ID
     })
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)  # ✅ Исправлено
-    print(f"✅ Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
 
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+    print(f"✅ Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
 
 def main():
     """Главная функция"""
