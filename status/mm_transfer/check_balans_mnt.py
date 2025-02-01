@@ -36,13 +36,13 @@ def check_balances():
     with open("wallet.txt", "r") as file:
         addresses = file.readlines()
     
-    print("Адрес; Баланс MNT; Баланс Токенов")  # Заголовок
+    print("Адрес; MNT; CAI")  # Заголовок
 
     for address in addresses:
         address = address.strip()
         eth_balance = get_eth_balance(address)
         token_balance = get_token_balance(address)  # Теперь всегда определена!
-        print(f"{address}; {eth_balance}; CAI {token_balance}")
+        print(f"{address}; {eth_balance}; {token_balance}")
 
 if __name__ == "__main__":
     check_balances()
