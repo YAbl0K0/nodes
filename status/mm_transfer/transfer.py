@@ -43,26 +43,25 @@ def send_eth(private_key, sender, recipient):
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
         print(f"Отправлено {amount} ETH: {w3.to_hex(tx_hash)}")
 
-def send_all_tokens(private_key, sender, recipient):
-    balance = get_token_balance(sender)
-    if balance > 0:
-        contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
-            {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
-        ])
-        nonce = w3.eth.get_transaction_count(sender)
-        token_amount = int(balance * (10 ** TOKEN_DECIMALS))
-        tx = contract.functions.transfer(recipient, token_amount).build_transaction({
-            'from': sender,
-            'nonce': nonce,
-            'gas': 100000,
-            'gasPrice': w3.to_wei(GAS_PRICE_GWEI, 'gwei'),
-            'chainId': CHAIN_ID
-        })
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-        print(f"Отправлены все {balance} токены: {w3.to_hex(tx_hash)}")
+def send_tokens(private_key, sender, recipient, amount):
+    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
+        {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
+    ])
+    nonce = w3.eth.get_transaction_count(sender)
+    token_amount = int(amount * (10 ** TOKEN_DECIMALS))
+    tx = contract.functions.transfer(recipient, token_amount).build_transaction({
+        'from': sender,
+        'nonce': nonce,
+        'gas': 100000,
+        'gasPrice': w3.to_wei(GAS_PRICE_GWEI, 'gwei'),
+        'chainId': CHAIN_ID
+    })
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+    tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    print(f"Отправлено {amount} токенов: {w3.to_hex(tx_hash)}")
 
 def main():
+    choice = input("Отправить все токены (1) или 0.1 токена (2)? ")
     with open("addresses.txt", "r") as file:
         lines = file.readlines()
         
@@ -74,7 +73,11 @@ def main():
         print(f"Баланс {sender}: {eth_balance} ETH, {token_balance} токенов")
         
         send_eth(private_key, sender, recipient)  # Отправить весь ETH, оставляя запас на газ
-        send_all_tokens(private_key, sender, recipient)  # Отправить все токены
+        
+        if choice == "1":
+            send_tokens(private_key, sender, recipient, token_balance)  # Отправить все токены
+        elif choice == "2":
+            send_tokens(private_key, sender, recipient, 0.1)  # Отправить 0.1 токена
         
         time.sleep(5)  # Задержка между транзакциями
 
