@@ -31,7 +31,7 @@ def check_balances():
         address = address.strip()
         eth_balance = get_eth_balance(address)
         token_balance = get_token_balance(address)
-        print(f"{address}\n   MNT: {eth_balance}")
+        print(f"{address} {eth_balance}")
 
 if __name__ == "__main__":
     check_balances()
