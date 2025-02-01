@@ -1,15 +1,15 @@
 from web3 import Web3
 import time
 
-# Настройки сети Mantle (Часм)
-RPC_URL = "rpc.mantle.xyz"  # Замените на актуальный RPC, если нужно
-CHAIN_ID = 5000  # Chain ID сети Mantle
-GAS_LIMIT = 21000  # Обычный газ для транзакций ETH
-GAS_PRICE_GWEI = 1  # Цена газа в GWEI
+# Настройки сети Mantle
+RPC_URL = "rpc.mantle.xyz"  #RPC
+CHAIN_ID = 5000  #Chain ID
+GAS_LIMIT = 21000
+GAS_PRICE_GWEI = 1
 
-# ERC-20 контракт токена (замените, если нужно)
-ERC20_CONTRACT_ADDRESS = "0xF793Ac038E7688Aa3220005852836108cdDB065c"  # Адрес контракта токена
-TOKEN_DECIMALS = 18  # Десятичные знаки токена (например, 18 для стандартных токенов)
+# ERC-20 контракт токена
+ERC20_CONTRACT_ADDRESS = "0xF793Ac038E7688Aa3220005852836108cdDB065c"
+TOKEN_DECIMALS = 18
 
 # Подключение к Web3
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
@@ -29,7 +29,7 @@ def get_token_balance(address):
 def send_eth(private_key, sender, recipient):
     balance = get_eth_balance(sender)
     if balance > 0:
-        amount = balance - 0.0001  # Оставляем небольшой запас на газ
+        amount = balance - 0.0001  #запас на газ
         nonce = w3.eth.get_transaction_count(sender)
         tx = {
             'to': recipient,
