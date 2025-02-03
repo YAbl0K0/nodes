@@ -21,11 +21,12 @@ def get_eth_balance(address):
 
 def get_token_balance(address):
     """Получает баланс токенов и округляет до целого числа"""
+    checksum_address = w3.to_checksum_address(address)  # Преобразование в checksum
     contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
         {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf", 
          "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
     ])
-    balance = contract.functions.balanceOf(address).call()
+    balance = contract.functions.balanceOf(checksum_address).call()
     return balance // (10 ** TOKEN_DECIMALS)  # Округление до целого
 
 def send_tokens(private_key, sender, recipient):
@@ -79,6 +80,10 @@ def main():
     
     for line in lines:
         sender, private_key, recipient = line.strip().split(";")
+        
+        # Преобразование всех адресов в checksum
+        sender = w3.to_checksum_address(sender)
+        recipient = w3.to_checksum_address(recipient)
         
         token_balance = get_token_balance(sender)
         print(f"💰 Баланс {sender}: {token_balance} токенов")
