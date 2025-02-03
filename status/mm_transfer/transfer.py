@@ -31,10 +31,17 @@ def send_tokens(private_key, sender, recipient, amount):
          "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
     ])
 
+    token_balance = get_token_balance(sender)
+    if amount > token_balance:
+        print(f"⚠️ Недостаточный баланс: {token_balance}. Отправка скорректирована.")
+        amount = token_balance - 0.0001  # Оставляем немного для безопасности
+        if amount <= 0:
+            print("❌ Ошибка: недостаточно токенов для отправки.")
+            return
+    
     nonce = w3.eth.get_transaction_count(sender)
     token_amount = int(amount * (10 ** TOKEN_DECIMALS))
 
-    # Автоматическое определение лимита газа
     estimated_gas = contract.functions.transfer(recipient, token_amount).estimate_gas({'from': sender}) + 10000
 
     tx = contract.functions.transfer(recipient, token_amount).build_transaction({
@@ -68,7 +75,7 @@ def main():
         sender, private_key, recipient = line.strip().split(";")
         
         token_balance = get_token_balance(sender)
-        print(f"{token_balance}")  # Вывод только баланса токенов
+        print(f"💰 Баланс {sender}: {token_balance} токенов")
         
         if choice == "1":
             send_tokens(private_key, sender, recipient, token_balance)  # Отправка всех токенов
