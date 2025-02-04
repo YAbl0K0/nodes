@@ -1,5 +1,5 @@
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
+from web3.middleware import geth_poa_middleware  # Убедись, что это импортируется правильно
 
 # RPC-адреса для поддерживаемых сетей
 RPC_URLS = {
@@ -17,7 +17,7 @@ def connect_to_network(network):
 
     w3 = Web3(Web3.HTTPProvider(RPC_URLS[network]))
     
-    # Добавляем поддержку POA (Arbitrum, BNB Chain, Optimism)
+    # Добавляем поддержку POA
     w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     if w3.is_connected():
