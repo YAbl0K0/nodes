@@ -8,52 +8,58 @@ RPC_URLS = {
     "opbnb": "https://opbnb-mainnet-rpc.bnbchain.org",
 }
 
-def connect_to_network(network):
-    """Подключение к выбранной сети"""
-    if network not in RPC_URLS:
-        print(f"❌ Сеть '{network}' не поддерживается!")
-        return None
+def connect_to_network():
+    """Меню выбора сети и подключение"""
+    print("\nВыберите сеть:")
+    for i, network in enumerate(RPC_URLS.keys(), 1):
+        print(f"{i}. {network.capitalize()}")
 
+    choice = int(input("Введите номер сети: ").strip()) - 1
+    network = list(RPC_URLS.keys())[choice]
+
+    print(f"\nПодключаемся к сети {network.capitalize()}...")
     w3 = Web3(Web3.HTTPProvider(RPC_URLS[network]))
 
     if w3.is_connected():
-        print(f"✅ Подключено к сети {network.capitalize()} (Block: {w3.eth.block_number})")
+        print(f"✅ Успешно подключено к сети {network.capitalize()} (Block: {w3.eth.block_number})")
         return w3
     else:
         print(f"❌ Ошибка подключения к сети {network.capitalize()}!")
         return None
 
-def get_transactions_by_address(w3, address, start_block=0, end_block="latest"):
-    """Получение всех транзакций для указанного адреса"""
-    address = address.lower()
-    end_block = w3.eth.block_number if end_block == "latest" else end_block
+def get_last_transactions(w3, address, count=1):
+    """Получить последние транзакции (1 или 10)"""
+    latest_block = w3.eth.block_number
     transactions = []
 
-    print(f"🔍 Поиск транзакций от блока {start_block} до {end_block}...")
+    print(f"🔍 Поиск последних {count} транзакций...")
 
-    for block_number in range(start_block, end_block + 1):
+    for block_number in range(latest_block, latest_block - 1000, -1):  # Сканируем последние 1000 блоков
         try:
             block = w3.eth.get_block(block_number, full_transactions=True)
         except Exception as e:
-            print(f"Ошибка при получении блока {block_number}: {e}")
+            print(f"⚠️ Ошибка при чтении блока {block_number}: {e}")
             continue
 
         for tx in block.transactions:
-            if tx["from"].lower() == address or (tx["to"] and tx["to"].lower() == address):
+            if tx["from"].lower() == address.lower() or (tx["to"] and tx["to"].lower() == address.lower()):
                 transactions.append({
                     "hash": tx.hash.hex(),
                     "from": tx["from"],
                     "to": tx["to"],
                     "value": w3.from_wei(tx["value"], 'ether'),
-                    "block": block_number
+                    "block": block_number,
                 })
+
+            if len(transactions) >= count:
+                return transactions
 
     return transactions
 
-def print_transactions(transactions):
+def print_transactions(transactions, count):
     """Вывод транзакций в удобном формате"""
     if transactions:
-        print("\n📌 Найденные транзакции:")
+        print(f"\n📌 Последние {count} транзакций:")
         print("TxHash; Отправитель; Получатель; Значение; Блок")
         for tx in transactions:
             print(f"{tx['hash']}; {tx['from']}; {tx['to']}; {tx['value']} ETH/MNT; {tx['block']}")
@@ -61,17 +67,14 @@ def print_transactions(transactions):
         print("❌ Транзакции не найдены")
 
 if __name__ == "__main__":
-    print("Выберите сеть: mantle, arbitrum, optimism, opbnb")
-    network = input("Введите название сети: ").strip().lower()
-
-    w3 = connect_to_network(network)
-
+    w3 = connect_to_network()
     if w3:
-        address = input("Введите адрес для поиска транзакций: ").strip()
-        start_block = int(input("Введите начальный блок (по умолчанию 0): ") or 0)
-        end_block = input("Введите конечный блок (по умолчанию latest): ").strip()
-        end_block = "latest" if not end_block else int(end_block)
+        address = input("\nВведите адрес для поиска транзакций: ").strip()
+        print("\nЧто вы хотите получить?")
+        print("1. Последнюю транзакцию")
+        print("2. Последние 10 транзакций")
+        choice = int(input("Введите ваш выбор (1 или 2): ").strip())
 
-        transactions = get_transactions_by_address(w3, address, start_block, end_block)
-        print_transactions(transactions)
-
+        count = 1 if choice == 1 else 10
+        transactions = get_last_transactions(w3, address, count)
+        print_transactions(transactions, count)
