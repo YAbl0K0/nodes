@@ -1,6 +1,6 @@
 from web3 import Web3
+from concurrent.futures import ThreadPoolExecutor
 
-# RPC-адреса для поддерживаемых сетей
 RPC_URLS = {
     "mantle": "https://rpc.mantle.xyz",
     "arbitrum": "https://arb1.arbitrum.io/rpc",
@@ -9,14 +9,12 @@ RPC_URLS = {
 }
 
 def connect_to_network():
-    """Меню выбора сети и подключение"""
     print("\nВыберите сеть:")
     for i, network in enumerate(RPC_URLS.keys(), 1):
         print(f"{i}. {network.capitalize()}")
 
     choice = int(input("Введите номер сети: ").strip()) - 1
     network = list(RPC_URLS.keys())[choice]
-
     print(f"\nПодключаемся к сети {network.capitalize()}...")
     w3 = Web3(Web3.HTTPProvider(RPC_URLS[network]))
 
@@ -27,15 +25,9 @@ def connect_to_network():
         print(f"❌ Ошибка подключения к сети {network.capitalize()}!")
         return None
 
-def get_transactions_by_address(w3, address, count=1):
-    """Получить последние транзакции (1 или 10)"""
-    latest_block = w3.eth.block_number
+def scan_block_range(w3, address, start_block, end_block):
     transactions = []
-    scanned_blocks = 0
-
-    print(f"🔍 Поиск последних {count} транзакций... (Сканируем с самого начала)")
-
-    for block_number in range(0, latest_block + 1):  # Сканируем от блока 0 до последнего
+    for block_number in range(start_block, end_block + 1):
         try:
             block = w3.eth.get_block(block_number, full_transactions=True)
             for tx in block.transactions:
@@ -47,22 +39,25 @@ def get_transactions_by_address(w3, address, count=1):
                         "value": w3.from_wei(tx["value"], 'ether'),
                         "block": block_number,
                     })
-                    if len(transactions) >= count:
-                        return transactions
-        except Exception as e:
-            print(f"⚠️ Ошибка при чтении блока {block_number}: {e}")
+        except Exception:
             continue
+    return transactions
 
-        scanned_blocks += 1
-        if scanned_blocks % 1000 == 0:
-            print(f"➡️ Сканировано {scanned_blocks} блоков...")
+def get_transactions_parallel(w3, address, latest_block, workers=4):
+    step = latest_block // workers
+    ranges = [(i, min(i + step, latest_block)) for i in range(0, latest_block + 1, step)]
+    transactions = []
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(scan_block_range, w3, address, start, end) for start, end in ranges]
+        for future in futures:
+            transactions.extend(future.result())
 
     return transactions
 
-def print_transactions(transactions, count):
-    """Вывод транзакций в удобном формате"""
+def print_transactions(transactions):
     if transactions:
-        print(f"\n📌 Последние {count} транзакций:")
+        print("\n📌 Найденные транзакции:")
         print("TxHash; Отправитель; Получатель; Значение; Блок")
         for tx in transactions:
             print(f"{tx['hash']}; {tx['from']}; {tx['to']}; {tx['value']} ETH/MNT; {tx['block']}")
@@ -73,11 +68,8 @@ if __name__ == "__main__":
     w3 = connect_to_network()
     if w3:
         address = input("\nВведите адрес для поиска транзакций: ").strip()
-        print("\nЧто вы хотите получить?")
-        print("1. Последнюю транзакцию")
-        print("2. Последние 10 транзакций")
-        choice = int(input("Введите ваш выбор (1 или 2): ").strip())
+        latest_block = w3.eth.block_number
 
-        count = 1 if choice == 1 else 10
-        transactions = get_transactions_by_address(w3, address, count)
-        print_transactions(transactions, count)
+        print("🔍 Параллельное сканирование...")
+        transactions = get_transactions_parallel(w3, address, latest_block, workers=4)
+        print_transactions(transactions)
