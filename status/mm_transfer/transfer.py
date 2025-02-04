@@ -57,21 +57,20 @@ def send_tokens(private_key, sender, recipient):
     
     try:
         estimated_gas = contract.functions.transfer(recipient, token_amount).estimate_gas({'from': sender})
+        tx = contract.functions.transfer(recipient, token_amount).build_transaction({
+            'from': sender,
+            'nonce': nonce,
+            'gas': estimated_gas,
+            'gasPrice': gas_price,
+            'chainId': CHAIN_ID
+        })
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        print(f"✅ Отправлено {token_balance} токенов: {w3.to_hex(tx_hash)}")
     except Exception as e:
-        print(f"❌ Ошибка estimate_gas: {str(e)}")
+        print(f"❌ Ошибка при отправке с {sender}: {str(e)}")
+        # Пропускаем текущий кошелек и продолжаем выполнение
         return
-    
-    tx = contract.functions.transfer(recipient, token_amount).build_transaction({
-        'from': sender,
-        'nonce': nonce,
-        'gas': estimated_gas,
-        'gasPrice': gas_price,
-        'chainId': CHAIN_ID
-    })
-    
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-    print(f"✅ Отправлено {token_balance} токенов: {w3.to_hex(tx_hash)}")
 
 def main():
     """Главная функция"""
@@ -79,17 +78,21 @@ def main():
         lines = file.readlines()
     
     for line in lines:
-        sender, private_key, recipient = line.strip().split(";")
-        
-        # Преобразование всех адресов в checksum
-        sender = w3.to_checksum_address(sender)
-        recipient = w3.to_checksum_address(recipient)
-        
-        token_balance = get_token_balance(sender)
-        print(f"💰 Баланс {sender}: {token_balance} токенов")
-        send_tokens(private_key, sender, recipient)  # Отправка всех токенов
-        
-        time.sleep(3)  # Задержка между транзакциями
+        try:
+            sender, private_key, recipient = line.strip().split(";")
+            
+            # Преобразование всех адресов в checksum
+            sender = w3.to_checksum_address(sender)
+            recipient = w3.to_checksum_address(recipient)
+            
+            token_balance = get_token_balance(sender)
+            print(f"💰 Баланс {sender}: {token_balance} токенов")
+            send_tokens(private_key, sender, recipient)  # Отправка всех токенов
+            
+            time.sleep(3)  # Задержка между транзакциями
+        except Exception as e:
+            print(f"⚠️ Пропущен адрес {line.strip()} из-за ошибки: {str(e)}")
+            continue
 
 if __name__ == "__main__":
     main()
