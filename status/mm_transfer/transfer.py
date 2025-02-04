@@ -38,23 +38,23 @@ def send_tokens(private_key, sender, recipient):
     if token_balance <= 0:
         print(f"⚠️ Пропускаем отправку {sender}, так как баланс 0 токенов")
         return
-
+    
     gas_price = GAS_PRICE()
     estimated_gas_cost = GAS_LIMIT * gas_price
     required_eth = w3.from_wei(estimated_gas_cost, 'ether')
-
+    
     if eth_balance < estimated_gas_cost:
         print(f"❌ Недостаточно ETH для газа! Баланс: {eth_balance_ether} ETH, требуется: {required_eth} ETH. Пропускаем {sender}")
         return
-
+    
     contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
         {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}], 
          "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
     ])
-
+    
     nonce = w3.eth.get_transaction_count(sender)
     token_amount = token_balance * (10 ** TOKEN_DECIMALS)
-
+    
     try:
         estimated_gas = contract.functions.transfer(recipient, token_amount).estimate_gas({'from': sender})
         tx = contract.functions.transfer(recipient, token_amount).build_transaction({
@@ -76,7 +76,7 @@ def main():
     """Главная функция"""
     with open("addresses.txt", "r") as file:
         lines = file.readlines()
-
+    
     for line in lines:
         try:
             sender, private_key, recipient = line.strip().split(";")
@@ -94,5 +94,5 @@ def main():
             print(f"⚠️ Пропущен адрес {line.strip()} из-за ошибки: {str(e)}")
             continue
 
-if __name__ == "__main__":
+if name == "__main__":
     main()
