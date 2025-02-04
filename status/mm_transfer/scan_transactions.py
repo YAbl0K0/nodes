@@ -27,32 +27,35 @@ def connect_to_network():
         print(f"❌ Ошибка подключения к сети {network.capitalize()}!")
         return None
 
-def get_last_transactions(w3, address, count=1):
+def get_transactions_by_address(w3, address, count=1):
     """Получить последние транзакции (1 или 10)"""
     latest_block = w3.eth.block_number
     transactions = []
+    scanned_blocks = 0
 
-    print(f"🔍 Поиск последних {count} транзакций...")
+    print(f"🔍 Поиск последних {count} транзакций... (Сканируем с самого начала)")
 
-    for block_number in range(latest_block, latest_block - 1000, -1):  # Сканируем последние 1000 блоков
+    for block_number in range(0, latest_block + 1):  # Сканируем от блока 0 до последнего
         try:
             block = w3.eth.get_block(block_number, full_transactions=True)
+            for tx in block.transactions:
+                if tx["from"].lower() == address.lower() or (tx["to"] and tx["to"].lower() == address.lower()):
+                    transactions.append({
+                        "hash": tx.hash.hex(),
+                        "from": tx["from"],
+                        "to": tx["to"],
+                        "value": w3.from_wei(tx["value"], 'ether'),
+                        "block": block_number,
+                    })
+                    if len(transactions) >= count:
+                        return transactions
         except Exception as e:
             print(f"⚠️ Ошибка при чтении блока {block_number}: {e}")
             continue
 
-        for tx in block.transactions:
-            if tx["from"].lower() == address.lower() or (tx["to"] and tx["to"].lower() == address.lower()):
-                transactions.append({
-                    "hash": tx.hash.hex(),
-                    "from": tx["from"],
-                    "to": tx["to"],
-                    "value": w3.from_wei(tx["value"], 'ether'),
-                    "block": block_number,
-                })
-
-            if len(transactions) >= count:
-                return transactions
+        scanned_blocks += 1
+        if scanned_blocks % 1000 == 0:
+            print(f"➡️ Сканировано {scanned_blocks} блоков...")
 
     return transactions
 
@@ -76,5 +79,5 @@ if __name__ == "__main__":
         choice = int(input("Введите ваш выбор (1 или 2): ").strip())
 
         count = 1 if choice == 1 else 10
-        transactions = get_last_transactions(w3, address, count)
+        transactions = get_transactions_by_address(w3, address, count)
         print_transactions(transactions, count)
