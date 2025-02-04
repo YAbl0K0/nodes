@@ -1,5 +1,5 @@
 from web3 import Web3
-from web3.middleware import geth_poa_middleware  # Новый путь для Web3 7.8.0
+from web3.middleware import geth_poa_middleware
 
 # RPC-адреса для поддерживаемых сетей
 RPC_URLS = {
