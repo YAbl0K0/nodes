@@ -35,24 +35,20 @@ echo -e "Процессор: ${color}${cpu_load}%${RESET} загружен"
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
 echo -e "Ping: ${MAGENTA}${ping_result} ms${RESET}"
 
-# Тест скорости интернет-соединения (если установлен speedtest-cli)
+# Проверка установки speedtest-cli
+if ! command -v speedtest &> /dev/null; then
+    echo -e "${YELLOW}Speedtest-cli не установлен. Устанавливаем...${RESET}"
+    sudo apt update && sudo apt install -y speedtest-cli
+fi
+
+# Проверка скорости интернета
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
     echo -e "Скорость скачивания: ${CYAN}${download_speed}${RESET}"
     echo -e "Скорость загрузки: ${CYAN}${upload_speed}${RESET}"
 else
-    echo "speedtest-cli не установлен. Попробуйте установить его:"
-    echo "sudo apt install speedtest-cli -y"
-    echo "Или используйте официальный клиент от Ookla:"
-    echo "curl -s https://install.speedtest.net/app/cli/install.deb -o speedtest.deb && sudo dpkg -i speedtest.deb && rm speedtest.deb"
-    echo "После установки запустите: speedtest"
-fi
-
-# Альтернативная проверка скорости интернета
-if ! command -v speedtest &> /dev/null || speedtest | grep -q "403 Forbidden"; then
-    echo -e "Альтернативный тест скорости загрузки:"
-    wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]* [KMGT]B/s'
+    echo -e "${RED}Speedtest-cli не удалось установить. Проверьте соединение и попробуйте вручную.${RESET}"
 fi
 
 # Скорость операций чтения/записи
