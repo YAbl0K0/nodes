@@ -48,7 +48,7 @@ echo -e "Ping: ${color}${ping_result} ms${RESET} (Норма до 10 ms)"
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
-    echo -e "Скорость скачивания: ${GREEN}${download_speed}${RESET} (Норма от 30 Mbit/s)"
+    echo -e "Скорость отправки: ${GREEN}${download_speed}${RESET} (Норма от 30 Mbit/s)"
     echo -e "Скорость загрузки: ${GREEN}${upload_speed}${RESET} (Норма от 30 Mbit/s)"
 else
     echo -e "${RED}Speedtest-cli не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
