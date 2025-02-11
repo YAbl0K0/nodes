@@ -6,6 +6,7 @@ YELLOW='\e[33m'
 RED='\e[31m'
 CYAN='\e[36m'
 MAGENTA='\e[35m'
+BOLD='\e[1m'
 RESET='\e[0m'
 
 # Вывод даты и времени
@@ -15,7 +16,7 @@ echo -e "\n===== Состояние системы на $(date) =====\n"
 disk_total=$(df -BG / | awk 'NR==2 {print $2}' | tr -d 'G')
 disk_usage=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
 color=$GREEN
-if (( disk_usage > 85 )); then color=$RED; warning="( Если больше 85 то нужно проверить что занимает место и удалить лишнее. Kоманда для проверки \"ncdu /\")";
+if (( disk_usage > 85 )); then color=$RED; warning="( Если больше 85 то нужно проверить что занимает место и удалить лишнее. Kоманда для проверки ${BOLD}${CYAN}ncdu /${RESET})";
 elif (( disk_usage > 50 )); then color=$YELLOW; warning="";
 else warning="";
 fi
