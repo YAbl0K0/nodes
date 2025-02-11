@@ -12,52 +12,45 @@ RESET='\e[0m'
 echo -e "\n===== Состояние системы на $(date) =====\n"
 
 # Проверка использования дискового пространства
+disk_total=$(df -BG / | awk 'NR==2 {print $2}' | tr -d 'G')
 disk_usage=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
 color=$GREEN
-if (( disk_usage > 90 )); then color=$RED
-elif (( disk_usage > 50 )); then color=$YELLOW
+if (( disk_usage > 85 )); then color=$RED; warning="( Если больше 85 то нужно проверить что занимает место и удалить лишнее. Kоманда для проверки \"ncdu /\")";
+elif (( disk_usage > 50 )); then color=$YELLOW; warning="";
+else warning="";
 fi
-echo -e "Дисковое пространство: ${color}${disk_usage}%${RESET} занято"
+echo -e "Дисковое пространство(Тотал ${disk_total}): ${color}${disk_usage}%${RESET} занято${warning}"
 
 # Использование оперативной памяти
-ram_usage=$(free -h | awk '/Mem:/ {print $3"/"$2}')
-echo -e "ОЗУ: ${CYAN}${ram_usage}${RESET}"
+ram_total=$(free -h | awk '/Mem:/ {print $2}')
+ram_used=$(free -h | awk '/Mem:/ {print $3}')
+ram_percent=$(free | awk '/Mem:/ {printf "%d", $3/$2 * 100}')
+color=$GREEN
+if (( ram_percent > 90 )); then color=$RED;
+elif (( ram_percent > 50 )); then color=$YELLOW;
+fi
+echo -e "ОЗУ (Тотал ${ram_total}): ${color}${ram_percent}%${RESET} занято (Норма до 90%)"
 
 # Загрузка процессора
 cpu_load=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')
 color=$GREEN
-if (( $(echo "$cpu_load > 80" | bc -l) )); then color=$RED
-elif (( $(echo "$cpu_load > 50" | bc -l) )); then color=$YELLOW
-fi
-echo -e "Процессор: ${color}${cpu_load}%${RESET} загружен"
+echo -e "Процессор: ${color}${cpu_load}%${RESET} загружен (Норма до 100% не больше 3 дней)"
 
 # Скорость интернета (ping)
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
-echo -e "Ping: ${MAGENTA}${ping_result} ms${RESET}"
-
-# Проверка установки speedtest-cli
-if ! command -v speedtest &> /dev/null; then
-    echo -e "${YELLOW}Speedtest-cli не установлен. Устанавливаем...${RESET}"
-    sudo apt update && sudo apt install -y speedtest-cli
+color=$GREEN
+if (( $(echo "$ping_result > 10" | bc -l) )); then color=$RED;
 fi
+echo -e "Ping: ${color}${ping_result} ms${RESET} (Норма до 10 ms)"
 
 # Проверка скорости интернета
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
-    if [[ -z "$download_speed" || -z "$upload_speed" ]]; then
-        echo -e "${RED}Speedtest-cli не смог получить данные. Пробуем альтернативные методы...${RESET}"
-    else
-        echo -e "Скорость скачивания: ${CYAN}${download_speed}${RESET}"
-        echo -e "Скорость загрузки: ${CYAN}${upload_speed}${RESET}"
-    fi
-fi
-
-# Альтернативные проверки скорости интернета
-if [[ -z "$download_speed" || -z "$upload_speed" ]]; then
-    echo -e "Альтернативный тест скорости загрузки через wget:"
-    wget_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]* [KMGT]B/s')
-    echo -e "Скорость загрузки: ${CYAN}${wget_speed}${RESET}"
+    echo -e "Скорость скачивания: ${GREEN}${download_speed}${RESET} (Норма от 30 Mbit/s)"
+    echo -e "Скорость загрузки: ${GREEN}${upload_speed}${RESET} (Норма от 30 Mbit/s)"
+else
+    echo -e "${RED}Speedtest-cli не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
 fi
 
 # Скорость операций чтения/записи
@@ -66,9 +59,9 @@ write_speed=$(dd if=/dev/zero of=$TEST_FILE bs=1M count=100 oflag=direct 2>&1 | 
 read_speed=$(dd if=$TEST_FILE of=/dev/null bs=1M count=100 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
 speed=$(hdparm -t /dev/sda | grep 'Timing buffered disk reads' | awk '{print $11 " " $12}')
 rm -f $TEST_FILE
-echo -e "Диск (запись): ${CYAN}${write_speed}${RESET}"
-echo -e "Диск (чтение): ${CYAN}${read_speed}${RESET}"
-echo -e "Диск (скорость): ${CYAN}${speed}${RESET}"
+echo -e "Диск (запись): ${GREEN}${write_speed}${RESET} (Норма от 500 Mb/s)"
+echo -e "Диск (чтение): ${GREEN}${read_speed}${RESET} (Норма от 500 Mb/s)"
+echo -e "Диск (скорость): ${GREEN}${speed}${RESET} (Норма от 400 Mb/s)"
 
 # Завершение работы
 echo -e "\n======================================="
