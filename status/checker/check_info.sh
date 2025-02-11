@@ -45,10 +45,19 @@ fi
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
-    echo -e "Скорость скачивания: ${CYAN}${download_speed}${RESET}"
-    echo -e "Скорость загрузки: ${CYAN}${upload_speed}${RESET}"
-else
-    echo -e "${RED}Speedtest-cli не удалось установить. Проверьте соединение и попробуйте вручную.${RESET}"
+    if [[ -z "$download_speed" || -z "$upload_speed" ]]; then
+        echo -e "${RED}Speedtest-cli не смог получить данные. Пробуем альтернативные методы...${RESET}"
+    else
+        echo -e "Скорость скачивания: ${CYAN}${download_speed}${RESET}"
+        echo -e "Скорость загрузки: ${CYAN}${upload_speed}${RESET}"
+    fi
+fi
+
+# Альтернативные проверки скорости интернета
+if [[ -z "$download_speed" || -z "$upload_speed" ]]; then
+    echo -e "Альтернативный тест скорости загрузки через wget:"
+    wget_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]* [KMGT]B/s')
+    echo -e "Скорость загрузки: ${CYAN}${wget_speed}${RESET}"
 fi
 
 # Скорость операций чтения/записи
