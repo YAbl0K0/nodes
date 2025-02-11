@@ -48,10 +48,12 @@ fi
 
 # Скорость операций чтения/записи
 TEST_FILE=/tmp/testfile
-speed_test=$(dd if=/dev/zero of=$TEST_FILE bs=1M count=100 oflag=direct 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
+write_speed=$(dd if=/dev/zero of=$TEST_FILE bs=1M count=100 oflag=direct 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
 rm -f $TEST_FILE
-
-echo -e "Диск (запись): ${speed_test}"
+read_speed=$(dd if=$TEST_FILE of=/dev/null bs=1M count=100 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
+rm -f $TEST_FILE
+echo -e "Диск (запись): ${write_speed}"
+echo -e "Диск (чтение): ${read_speed}"
 
 # Завершение работы
 echo -e "\n======================================="
