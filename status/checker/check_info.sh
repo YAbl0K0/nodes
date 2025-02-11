@@ -30,8 +30,10 @@ echo -e "Ping: ${ping_result} ms"
 
 # Тест скорости интернет-соединения (если установлен speedtest-cli)
 if command -v speedtest &> /dev/null; then
-    echo -n "Скорость интернета: "
-    speedtest --simple | grep "Download" | awk '{print $2 " " $3}'
+    download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
+    upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
+    echo -e "Скорость скачивания: ${download_speed}"
+    echo -e "Скорость загрузки: ${upload_speed}"
 else
     echo "speedtest-cli не установлен. Попробуйте установить его:"
     echo "sudo apt install speedtest-cli -y"
@@ -49,11 +51,12 @@ fi
 # Скорость операций чтения/записи
 TEST_FILE=/tmp/testfile
 write_speed=$(dd if=/dev/zero of=$TEST_FILE bs=1M count=100 oflag=direct 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
-rm -f $TEST_FILE
 read_speed=$(dd if=$TEST_FILE of=/dev/null bs=1M count=100 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
+speed=$(hdparm -t /dev/sda | grep 'Timing buffered disk reads' | awk '{print $11 " " $12}')
 rm -f $TEST_FILE
 echo -e "Диск (запись): ${write_speed}"
 echo -e "Диск (чтение): ${read_speed}"
+echo -e "Диск (скорость): ${speed}"
 
 # Завершение работы
 echo -e "\n======================================="
