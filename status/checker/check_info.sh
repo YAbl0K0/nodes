@@ -47,6 +47,23 @@ if (( $(echo "$ping_result > 10" | bc -l) )); then color=$RED;
 fi
 echo -e "Ping: ${color}${ping_result} ms${RESET} (Норма: <= 10 ms)"
 
+# Проверка скорости интернета (Speedtest или wget)
+if ! command -v speedtest &> /dev/null; then
+    echo -e "${YELLOW}Устанавливаю speedtest-cli...${RESET}"
+    sudo apt install speedtest-cli -y > /dev/null 2>&1
+fi
+
+if command -v speedtest &> /dev/null; then
+    download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
+    upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
+else
+    echo -e "${RED}Speedtest-cli не удалось использовать, проверяю через wget...${RESET}"
+    download_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]\+ [KM]B/s')
+    upload_speed="N/A"
+fi
+echo -e "Скорость отправки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
+echo -e "Скорость загрузки: ${GREEN}${download_speed}${RESET} (Норма: >= 30 Mbit/s)"
+
 # Проверка и установка sysstat для iostat
 if ! command -v iostat &> /dev/null; then
     echo -e "${YELLOW}Устанавливаю sysstat...${RESET}"
