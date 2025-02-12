@@ -62,6 +62,12 @@ else
     echo -e "${RED}Speedtest-cli не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
 fi
 
+# Проверка и установка sysstat для iostat
+if ! command -v iostat &> /dev/null; then
+    echo -e "${YELLOW}Устанавливаю sysstat...${RESET}"
+    sudo apt install sysstat -y > /dev/null 2>&1 || echo -e "${RED}Ошибка установки sysstat!${RESET}"
+fi
+
 # Скорость операций чтения/записи
 if ! command -v fio &> /dev/null; then
     echo -e "${YELLOW}Устанавливаю fio...${RESET}"
