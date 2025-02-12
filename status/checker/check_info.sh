@@ -61,11 +61,12 @@ fi
 # Скорость операций чтения/записи
 if ! command -v fio &> /dev/null; then
     echo -e "${YELLOW}Устанавливаю fio...${RESET}"
-    sudo apt install fio -y || echo -e "${RED}Ошибка установки fio!${RESET}"
+    sudo apt install fio -y > /dev/null 2>&1 || echo -e "${RED}Ошибка установки fio!${RESET}"
 fi
 
 if command -v fio &> /dev/null; then
-    fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting
+    disk_speed=$(fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'WRITE: bw=[0-9]+MiB/s')
+    echo -e "Скорость диска: ${GREEN}${disk_speed}${RESET} (Норма: >= 500 MiB/s)"
 else
     echo -e "${RED}fio не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
 fi
