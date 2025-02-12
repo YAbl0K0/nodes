@@ -36,12 +36,9 @@ fi
 echo -e "ОЗУ (Тотал ${ram_total}): ${color}${ram_percent}%${RESET} занято (Норма: <= 90%)"
 
 # Загрузка процессора
-cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8}')
+load_avg=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)
 color=$GREEN
-if (( $(echo "$cpu_usage > 90" | bc -l) )); then color=$RED;
-elif (( $(echo "$cpu_usage > 50" | bc -l) )); then color=$YELLOW;
-fi
-echo -e "Процессор: ${color}${cpu_usage}%${RESET} загружено (Норма: <= 90%)"
+echo -e "Процессор: ${color}${load_avg}${RESET} средняя загрузка за 1 минуту (Норма: <= 1.0)"
 
 # Проверка скорости интернета (ping)
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
