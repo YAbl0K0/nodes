@@ -9,8 +9,8 @@ MAGENTA='\e[35m'
 BOLD='\e[1m'
 RESET='\e[0m'
 
-# Получение IP-адреса сервера
-server_ip=$(hostname -I | awk '{print $1}')
+# Получение IP-адреса сервера (внешний и локальный)
+server_ip=$(curl -s ifconfig.me || ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1)
 
 # Вывод даты, времени и IP-адреса сервера
 echo -e "\n===== Состояние системы на $(date) ====="
