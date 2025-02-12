@@ -65,8 +65,10 @@ if ! command -v fio &> /dev/null; then
 fi
 
 if command -v fio &> /dev/null; then
-    disk_speed=$(fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'WRITE: bw=[0-9]+MiB/s')
-    echo -e "Скорость диска: ${GREEN}${disk_speed}${RESET} (Норма: >= 500 MiB/s)"
+    write_speed=$(fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'WRITE: bw=[0-9]+MiB/s')
+    read_speed=$(fio --name=read_test --filename=/tmp/testfile --rw=read --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'READ: bw=[0-9]+MiB/s')
+    echo -e "Скорость записи на диск: ${GREEN}${write_speed}${RESET} (Норма: >= 500 MiB/s)"
+    echo -e "Скорость чтения с диска: ${GREEN}${read_speed}${RESET} (Норма: >= 500 MiB/s)"
 else
     echo -e "${RED}fio не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
 fi
