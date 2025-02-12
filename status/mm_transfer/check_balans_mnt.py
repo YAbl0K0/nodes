@@ -1,4 +1,13 @@
-from web3 import Web3
+import sys
+import subprocess
+
+# Проверяем, установлен ли web3, и при необходимости устанавливаем
+try:
+    from web3 import Web3
+except ImportError:
+    print("web3 не найден. Устанавливаем...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
+    from web3 import Web3
 
 # RPC-узлы для каждой сети
 RPC_URLS = {
