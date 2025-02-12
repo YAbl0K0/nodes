@@ -59,10 +59,16 @@ if command -v speedtest &> /dev/null; then
 else
     echo -e "${RED}Speedtest-cli не удалось использовать, проверяю через wget...${RESET}"
     download_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]\+ [KM]B/s')
-    upload_speed="N/A"
+    if command -v iperf3 &> /dev/null; then
+        upload_speed=$(iperf3 -c speedtest.server -u -b 100M -t 5 | grep 'sender' | awk '{print $7 " " $8}')
+    else
+        upload_speed="N/A"
+    fi
 fi
-echo -e "Скорость отправки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
+
 echo -e "Скорость загрузки: ${GREEN}${download_speed}${RESET} (Норма: >= 30 Mbit/s)"
+echo -e "Скорость отправки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
+
 
 # Проверка и установка sysstat для iostat
 if ! command -v iostat &> /dev/null; then
