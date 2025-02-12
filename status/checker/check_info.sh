@@ -36,9 +36,13 @@ fi
 echo -e "ОЗУ (Тотал ${ram_total}): ${color}${ram_percent}%${RESET} занято (Норма: <= 90%)"
 
 # Загрузка процессора
-load_avg=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)
+cpu_total=$(nproc)
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print 100 - $8}')
 color=$GREEN
-echo -e "Процессор: ${color}${load_avg}${RESET} средняя загрузка за 1 минуту (Норма: <= 10.0)"
+if (( $(echo "$cpu_usage > 90" | bc -l) )); then color=$RED;
+elif (( $(echo "$cpu_usage > 50" | bc -l) )); then color=$YELLOW;
+fi
+echo -e "Процессор (Тотал: ${cpu_total} ядер): ${color}${cpu_usage}%${RESET} загружено (Норма: <= 90%)"
 
 # Проверка скорости интернета (ping)
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
@@ -59,16 +63,10 @@ if command -v speedtest &> /dev/null; then
 else
     echo -e "${RED}Speedtest-cli не удалось использовать, проверяю через wget...${RESET}"
     download_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]\+ [KM]B/s')
-    if command -v iperf3 &> /dev/null; then
-        upload_speed=$(iperf3 -c speedtest.server -u -b 100M -t 5 | grep 'sender' | awk '{print $7 " " $8}')
-    else
-        upload_speed="N/A"
-    fi
+    upload_speed="N/A"
 fi
-
 echo -e "Скорость загрузки: ${GREEN}${download_speed}${RESET} (Норма: >= 30 Mbit/s)"
 echo -e "Скорость отправки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
-
 
 # Проверка и установка sysstat для iostat
 if ! command -v iostat &> /dev/null; then
