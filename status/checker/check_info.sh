@@ -12,6 +12,9 @@ RESET='\e[0m'
 # Вывод даты и времени
 echo -e "\n===== Состояние системы на $(date) =====\n"
 
+# Получение IP-адреса сервера
+server_ip=$(hostname -I | awk '{print $1}')
+
 # Проверка использования дискового пространства
 disk_total=$(df -BG / | awk 'NR==2 {print $2}' | tr -d 'G')
 disk_usage=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
