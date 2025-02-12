@@ -47,43 +47,54 @@ if (( $(echo "$ping_result > 10" | bc -l) )); then color=$RED;
 fi
 echo -e "Ping: ${color}${ping_result} ms${RESET} (Норма: <= 10 ms)"
 
-# Проверка скорости интернета
+# Проверка скорости интернета (Speedtest или wget)
 if ! command -v speedtest &> /dev/null; then
-    echo -e "${YELLOW}Устанавливаю спидтест, подождите 30 секунд...${RESET}"
-    sudo apt install speedtest-cli -y > /dev/null 2>&1 || echo -e "${RED}Ошибка установки speedtest-cli!${RESET}"
+    echo -e "${YELLOW}Устанавливаю spidtest-cli...${RESET}"
+    sudo apt install speedtest-cli -y > /dev/null 2>&1
 fi
 
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
-    echo -e "Скорость отправки: ${GREEN}${download_speed}${RESET} (Норма: >= 30 Mbit/s)"
-    echo -e "Скорость загрузки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
 else
-    echo -e "${RED}Speedtest-cli не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
+    echo -e "${RED}Speedtest-cli не удалось использовать, проверяю через wget...${RESET}"
+    download_speed=$(wget -O /dev/null http://speedtest.tele2.net/10MB.zip 2>&1 | grep -o '[0-9.]\+ [KM]B/s')
+    upload_speed="N/A"
 fi
+echo -e "Скорость отправки: ${GREEN}${download_speed}${RESET} (Норма: >= 30 Mbit/s)"
+echo -e "Скорость загрузки: ${GREEN}${upload_speed}${RESET} (Норма: >= 30 Mbit/s)"
 
 # Проверка и установка sysstat для iostat
 if ! command -v iostat &> /dev/null; then
     echo -e "${YELLOW}Устанавливаю sysstat...${RESET}"
-    sudo apt install sysstat -y > /dev/null 2>&1 || echo -e "${RED}Ошибка установки sysstat!${RESET}"
+    sudo apt install sysstat -y > /dev/null 2>&1
 fi
 
-# Скорость операций чтения/записи
+# Скорость операций чтения/записи (fio или dd)
 if ! command -v fio &> /dev/null; then
     echo -e "${YELLOW}Устанавливаю fio...${RESET}"
-    sudo apt install fio -y > /dev/null 2>&1 || echo -e "${RED}Ошибка установки fio!${RESET}"
+    sudo apt install fio -y > /dev/null 2>&1
 fi
 
 if command -v fio &> /dev/null; then
     write_speed=$(fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'WRITE: bw=[0-9]+MiB/s')
     read_speed=$(fio --name=read_test --filename=/tmp/testfile --rw=read --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting | grep -Eo 'READ: bw=[0-9]+MiB/s')
-    disk_speed=$(iostat -d | awk 'NR==4 {print $2 " MB/s"}')
-    echo -e "Скорость записи на диск: ${GREEN}${write_speed}${RESET} (Норма: >= 500 MiB/s)"
-    echo -e "Скорость чтения с диска: ${GREEN}${read_speed}${RESET} (Норма: >= 500 MiB/s)"
-    echo -e "Скорость диска: ${GREEN}${disk_speed}${RESET} (Норма: >= 500 MiB/s)"
 else
-    echo -e "${RED}fio не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
+    echo -e "${YELLOW}fio не найден, использую dd...${RESET}"
+    write_speed=$(dd if=/dev/zero of=/tmp/testfile bs=1M count=100 oflag=direct 2>&1 | grep -o '[0-9.]\+ MB/s')
+    read_speed=$(dd if=/tmp/testfile of=/dev/null bs=1M count=100 2>&1 | grep -o '[0-9.]\+ MB/s')
+    rm -f /tmp/testfile
 fi
+echo -e "Скорость записи на диск: ${GREEN}${write_speed}${RESET} (Норма: >= 500 MiB/s)"
+echo -e "Скорость чтения с диска: ${GREEN}${read_speed}${RESET} (Норма: >= 500 MiB/s)"
+
+# Проверка общей скорости диска
+if command -v iostat &> /dev/null; then
+    disk_speed=$(iostat -d | awk 'NR==4 {print $2 " MB/s"}')
+else
+    disk_speed="N/A"
+fi
+echo -e "Скорость диска: ${GREEN}${disk_speed}${RESET} (Норма: >= 500 MiB/s)"
 
 # Завершение работы
 echo -e "\n======================================="
