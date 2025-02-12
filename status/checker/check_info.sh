@@ -33,11 +33,11 @@ fi
 echo -e "ОЗУ (Тотал ${ram_total}): ${color}${ram_percent}%${RESET} занято (Норма до 90%)"
 
 # Загрузка процессора
-cpu_load=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')
+load_avg=$(uptime | awk -F'load average:' '{print $2}' | cut -d, -f1)
 color=$GREEN
-echo -e "Процессор: ${color}${cpu_load}%${RESET} загружен (Норма до 100% не больше 3 дней)"
+echo -e "Процессор: ${color}${load_avg}${RESET} средняя загрузка за 1 минуту"
 
-# Скорость интернета (ping)
+# Проверка скорости интернета (ping)
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
 color=$GREEN
 if (( $(echo "$ping_result > 10" | bc -l) )); then color=$RED;
@@ -45,6 +45,11 @@ fi
 echo -e "Ping: ${color}${ping_result} ms${RESET} (Норма до 10 ms)"
 
 # Проверка скорости интернета
+if ! command -v speedtest &> /dev/null; then
+    echo -e "${YELLOW}Устанавливаю speedtest-cli...${RESET}"
+    sudo apt install speedtest-cli -y || echo -e "${RED}Ошибка установки speedtest-cli!${RESET}"
+fi
+
 if command -v speedtest &> /dev/null; then
     download_speed=$(speedtest --simple | grep "Download" | awk '{print $2 " " $3}')
     upload_speed=$(speedtest --simple | grep "Upload" | awk '{print $2 " " $3}')
@@ -55,14 +60,16 @@ else
 fi
 
 # Скорость операций чтения/записи
-TEST_FILE=/tmp/testfile
-write_speed=$(dd if=/dev/zero of=$TEST_FILE bs=1M count=100 oflag=direct 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
-read_speed=$(dd if=$TEST_FILE of=/dev/null bs=1M count=100 2>&1 | grep -i "copied" | awk '{print $(NF-1) " " $NF}')
-speed=$(hdparm -t /dev/sda | grep 'Timing buffered disk reads' | awk '{print $11 " " $12}')
-rm -f $TEST_FILE
-echo -e "Диск (запись): ${GREEN}${write_speed}${RESET} (Норма от 500 Mb/s)"
-echo -e "Диск (чтение): ${GREEN}${read_speed}${RESET} (Норма от 500 Mb/s)"
-echo -e "Диск (скорость): ${GREEN}${speed}${RESET} (Норма от 400 Mb/s)"
+if ! command -v fio &> /dev/null; then
+    echo -e "${YELLOW}Устанавливаю fio...${RESET}"
+    sudo apt install fio -y || echo -e "${RED}Ошибка установки fio!${RESET}"
+fi
+
+if command -v fio &> /dev/null; then
+    fio --name=write_test --filename=/tmp/testfile --rw=write --bs=1M --size=100M --numjobs=1 --time_based --runtime=5 --group_reporting
+else
+    echo -e "${RED}fio не удалось установить или запустить. Проверьте соединение и попробуйте вручную.${RESET}"
+fi
 
 # Завершение работы
 echo -e "\n======================================="
