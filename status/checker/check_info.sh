@@ -16,10 +16,14 @@ echo -e "\n===== Состояние системы на $(date) =====\n"
 disk_total=$(df -BG / | awk 'NR==2 {print $2}' | tr -d 'G')
 disk_usage=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
 color=$GREEN
-if (( disk_usage > 85 )); then color=$RED;
-elif (( disk_usage > 50 )); then color=$YELLOW;
+warning=""
+if (( disk_usage > 85 )); then 
+    color=$RED
+    warning="${RED}(Забито больше нормы \"85%\" проверьте сервер на лишние файлы и удалите их ${BOLD}${CYAN}команда: ncdu /${RESET}${RED}, если не уверены что можно удалять обратитесь к сапортам)${RESET}"
+elif (( disk_usage > 50 )); then 
+    color=$YELLOW
 fi
-echo -e "Дисковое пространство(Тотал ${disk_total}): ${color}${disk_usage}%${RESET} занято (Норма: <= 85%)"
+echo -e "Дисковое пространство(Тотал ${disk_total}): ${color}${disk_usage}%${RESET} занято (Норма: <= 85%) ${warning}"
 
 # Использование оперативной памяти
 ram_total=$(free -h | awk '/Mem:/ {print $2}')
