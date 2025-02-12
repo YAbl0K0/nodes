@@ -42,7 +42,7 @@ color=$GREEN
 if (( $(echo "$cpu_usage > 90" | bc -l) )); then color=$RED;
 elif (( $(echo "$cpu_usage > 50" | bc -l) )); then color=$YELLOW;
 fi
-echo -e "Процессор: Загружено ${color}${cpu_usage}%${RESET}, ${load_avg} средняя загрузка за 1 минуту (Норма: <= 1.0)"
+echo -e "Процессор: Загружено ${color}${cpu_usage}%${RESET}, ${load_avg} средняя загрузка за 1 минуту (Норма: <= 10.0)"
 
 # Проверка скорости интернета (ping)
 ping_result=$(ping -c 4 google.com | tail -1 | awk -F'/' '{print $5}')
