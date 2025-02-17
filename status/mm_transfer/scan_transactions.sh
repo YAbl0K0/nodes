@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Файл со списком кошельков (один кошелек на строку)
-WALLETS_FILE="wallets.txt"
+WALLETS_FILE="wallet.txt"
 
 # API-ключи (замени на свои)
 BSC_API_KEY="NUCVA3NGW2UKSQX2FTH6VHQMMYA9FVUYAR"
