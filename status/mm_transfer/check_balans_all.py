@@ -39,7 +39,7 @@ def get_eth_balance(network, address):
     
     try:
         balance = w3_networks[network].eth.get_balance(address)
-        return float(w3_networks[network].from_wei(balance, 'ether'))
+        return round(float(w3_networks[network].from_wei(balance, 'ether')), 1)
     except Exception as e:
         print(f"Ошибка получения баланса в {network} для {address}: {e}")
         return 0
