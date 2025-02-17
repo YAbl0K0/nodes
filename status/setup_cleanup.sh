@@ -15,11 +15,17 @@ for file in "${LOG_FILES[@]}"; do
     fi
 done
 
-# === Остановка 0g, удаление базы, запуск 0g ===
-systemctl stop 0g
-find "$DB_PATH" -type f -delete
-systemctl start 0g
-echo "Очистка базы и перезапуск 0g завершены"
+# === Проверяем размер базы перед очисткой ===
+DB_SIZE=$(du -sb "$DB_PATH" | cut -f1)
+if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
+    echo "Размер базы $DB_PATH превышает 5GB ($DB_SIZE байт). Начинаем очистку..."
+    systemctl stop 0g
+    find "$DB_PATH" -type f -delete
+    systemctl start 0g
+    echo "Очистка базы и перезапуск 0g завершены"
+else
+    echo "Размер базы $DB_PATH в пределах нормы ($DB_SIZE байт). Очистка не требуется."
+fi
 
 # === Добавление в cron ===
 (crontab -l 2>/dev/null | grep -v "$DB_PATH"; echo "$CRON_JOB") | crontab -
