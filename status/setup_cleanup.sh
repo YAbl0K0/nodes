@@ -9,7 +9,7 @@ echo "=== Выполняем очистку логов и базы ==="
 
 # === Очистка логов, если они больше 1GB ===
 for file in "${LOG_FILES[@]}"; do
-    if [ -f "$file" ] && [ $(du -b "$file" | cut -f1) -gt 1073741824 ]; then
+    if [ -f "$file" ] && [ $(du -b "$file" | cut -f1) -gt 2147483648 ]; then
         cat /dev/null > "$file"
         echo "Очищен: $file"
     fi
