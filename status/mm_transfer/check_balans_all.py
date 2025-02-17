@@ -39,28 +39,28 @@ def get_eth_balance(network, address):
     
     try:
         balance = w3_networks[network].eth.get_balance(address)
-        return w3_networks[network].from_wei(balance, 'ether')
+        return float(w3_networks[network].from_wei(balance, 'ether'))
     except Exception as e:
         print(f"Ошибка получения баланса в {network} для {address}: {e}")
         return 0
 
 def check_balances():
-    """Читает адреса из файла и выводит баланс в формате: Адрес; MNT; OpBNB; Arbitrum; BNB"""
+    """Читает адреса из файла и выводит баланс в формате: Адрес;MNT;OpBNB;Arbitrum;BNB"""
     with open("wallet.txt", "r") as file:
         addresses = file.readlines()
     
-    print("Адрес; MNT; OpBNB; Arbitrum; BNB")  # Заголовок
+    print("Адрес;MNT;OpBNB;Arbitrum;BNB")  # Заголовок
 
     for address in addresses:
         address = address.strip()
         checksum_address = to_checksum(address)
 
         if not checksum_address:
-            print(f"{address}; 0; 0; 0; 0")
+            print(f"{address};0;0;0;0")
             continue
 
         balances = {network: get_eth_balance(network, checksum_address) for network in RPC_URLS}
-        print(f"{checksum_address}; {balances['Mantle']}; {balances['OpBNB']}; {balances['Arbitrum']}; {balances['BNB']}")
+        print(f"{checksum_address};{balances['Mantle']};{balances['OpBNB']};{balances['Arbitrum']};{balances['BNB']}")
 
 if __name__ == "__main__":
     check_balances()
