@@ -40,7 +40,7 @@ def get_eth_balance(network, address):
     try:
         balance = w3_networks[network].eth.get_balance(address)
         balance_eth = float(w3_networks[network].from_wei(balance, 'ether'))
-        return round(balance_eth, 1) if balance_eth >= 0.1 else round(balance_eth, 1) if balance_eth >= 1 else 0.0
+        return round(balance_eth, 3)
     except Exception as e:
         print(f"Ошибка получения баланса в {network} для {address}: {e}")
         return 0
@@ -57,7 +57,7 @@ def check_balances():
         checksum_address = to_checksum(address)
 
         if not checksum_address:
-            print(f"{address};0;0;0;0")
+            print(f"{address};0.000;0.000;0.000;0.000")
             continue
 
         balances = {network: get_eth_balance(network, checksum_address) for network in RPC_URLS}
