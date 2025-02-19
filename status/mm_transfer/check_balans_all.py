@@ -14,7 +14,8 @@ RPC_URLS = {
     "Mantle": "https://rpc.mantle.xyz",
     "OpBNB": "https://opbnb-mainnet-rpc.bnbchain.org",
     "Arbitrum": "https://arb1.arbitrum.io/rpc",
-    "BNB": "https://bsc-dataseed.binance.org"
+    "BNB": "https://bsc-dataseed.binance.org",
+    "Dill": "https://rpc-alps.dill.xyz"
 }
 
 # Подключение к сетям
@@ -46,22 +47,39 @@ def get_eth_balance(network, address):
         return 0
 
 def check_balances():
-    """Читает адреса из файла и выводит баланс в формате: Адрес;MNT;OpBNB;Arbitrum;BNB"""
+    """Читает адреса из файла и выводит баланс в выбранной сети или по всем сетям"""
     with open("wallet.txt", "r") as file:
         addresses = file.readlines()
     
-    print("Адрес;MNT;OpBNB;Arbitrum;BNB")  # Заголовок
-
+    print("Выберите сеть для вывода баланса:")
+    print("1 - Все сети")
+    for i, network in enumerate(RPC_URLS.keys(), start=2):
+        print(f"{i} - {network}")
+    
+    choice = input("Введите номер сети: ")
+    
+    if choice == "1":
+        selected_networks = list(RPC_URLS.keys())
+    else:
+        try:
+            index = int(choice) - 2
+            selected_networks = [list(RPC_URLS.keys())[index]]
+        except (ValueError, IndexError):
+            print("Некорректный ввод. Выводим балансы по всем сетям.")
+            selected_networks = list(RPC_URLS.keys())
+    
+    print("Адрес;" + ";".join(selected_networks))  # Заголовок
+    
     for address in addresses:
         address = address.strip()
         checksum_address = to_checksum(address)
-
+        
         if not checksum_address:
-            print(f"{address};0.000;0.000;0.000;0.000")
+            print(f"{address};" + ";".join(["0.000"] * len(selected_networks)))
             continue
-
-        balances = {network: get_eth_balance(network, checksum_address) for network in RPC_URLS}
-        print(f"{checksum_address};{balances['Mantle']};{balances['OpBNB']};{balances['Arbitrum']};{balances['BNB']}")
+        
+        balances = {network: get_eth_balance(network, checksum_address) for network in selected_networks}
+        print(f"{checksum_address};" + ";".join(str(balances[network]) for network in selected_networks))
 
 if __name__ == "__main__":
     check_balances()
