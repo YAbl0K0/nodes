@@ -4,7 +4,7 @@
 LOG_FILES=("/var/log/syslog.1" "/var/log/syslog" "/root/0g-storage-node/run/log/zgs.log.*")
 DB_PATH="/root/.0gchain/data/tx_index.db/"
 DB_SIZE_LIMIT=5368709120  # 5GB в байтах
-CRON_JOB="0 9 * * * for file in /var/log/syslog.1 /var/log/syslog /root/0g-storage-node/run/log/zgs.log.*; do [ -f \"$file\" ] && [ \$(du -b \"$file\" | cut -f1) -gt 1073741824 ] && cat /dev/null > \"$file\"; done; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
+CRON_JOB="0 9 * * * for file in /var/log/syslog.1 /var/log/syslog /root/0g-storage-node/run/log/zgs.log.*; do [ -f \"$file\" ] && [ $(du -b \"$file\" | cut -f1) -gt 1073741824 ] && cat /dev/null > \"$file\"; done; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
 
 echo "=== Выполняем очистку логов и базы ==="
 
@@ -17,15 +17,19 @@ for file in "${LOG_FILES[@]}"; do
 done
 
 # === Проверяем размер базы перед очисткой ===
-DB_SIZE=$(du -sb "$DB_PATH" | cut -f1)
-if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
-    echo "Размер базы $DB_PATH превышает 5GB ($DB_SIZE байт). Начинаем очистку..."
-    systemctl stop 0g
-    find "$DB_PATH" -type f -delete
-    systemctl start 0g
-    echo "Очистка базы и перезапуск 0g завершены"
+if [ -d "$DB_PATH" ]; then
+    DB_SIZE=$(du -sb "$DB_PATH" | cut -f1)
+    if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
+        echo "Размер базы $DB_PATH превышает 5GB ($DB_SIZE байт). Начинаем очистку..."
+        systemctl stop 0g
+        find "$DB_PATH" -type f -delete
+        systemctl start 0g
+        echo "Очистка базы и перезапуск 0g завершены"
+    else
+        echo "Размер базы $DB_PATH в пределах нормы ($DB_SIZE байт). Очистка не требуется."
+    fi
 else
-    echo "Размер базы $DB_PATH в пределах нормы ($DB_SIZE байт). Очистка не требуется."
+    echo "Папка базы данных $DB_PATH не найдена. Пропускаем очистку."
 fi
 
 # === Добавление в cron ===
