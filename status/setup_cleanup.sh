@@ -1,29 +1,45 @@
 #!/bin/bash
 
 # === Переменные ===
-LOG_FILES=("/var/log/syslog.1" "/var/log/syslog" "/root/0g-storage-node/run/log/zgs.log.*")
+LOG_DIR="/root/0g-storage-node/run/log/"
+LOG_PATTERN="zgs.log.*"
+SYSLOG_FILES=("/var/log/syslog.1" "/var/log/syslog")
 DB_PATH="/root/.0gchain/data/tx_index.db/"
 DB_SIZE_LIMIT=5368709120  # 5GB в байтах
 
 echo "=== Выполняем очистку логов и базы ==="
 
 # === Очистка логов, если они больше 1GB ===
-for file in "${LOG_FILES[@]}"; do
-    for real_file in $(ls $file 2>/dev/null); do  # ls возвращает список файлов по маске
-        if [ -f "$real_file" ]; then
-            FILE_SIZE=$(du -b "$real_file" 2>/dev/null | cut -f1)
-            if [ "$FILE_SIZE" -gt 2147483648 ]; then
-                cat /dev/null > "$real_file"
-                echo "Очищен: $real_file"
-            fi
+for file in "${SYSLOG_FILES[@]}"; do
+    if [ -f "$file" ]; then
+        FILE_SIZE=$(du -b "$file" 2>/dev/null | cut -f1)
+        if [ "$FILE_SIZE" -gt 1073741824 ]; then
+            cat /dev/null > "$file"
+            echo "Очищен: $file"
+        fi
+    else
+        echo "Файл $file не найден, пропускаем."
+    fi
+done
+
+# === Очистка логов в /root/0g-storage-node/run/log/ ===
+FOUND_LOGS=$(find "$LOG_DIR" -type f -name "$LOG_PATTERN" 2>/dev/null)
+if [ -n "$FOUND_LOGS" ]; then
+    for log_file in $FOUND_LOGS; do
+        FILE_SIZE=$(du -b "$log_file" 2>/dev/null | cut -f1)
+        if [ "$FILE_SIZE" -gt 1073741824 ]; then
+            cat /dev/null > "$log_file"
+            echo "Очищен: $log_file"
         fi
     done
-done
+else
+    echo "Файлы логов по маске $LOG_PATTERN в $LOG_DIR не найдены, пропускаем."
+fi
 
 # === Проверяем размер базы перед очисткой ===
 if [ -d "$DB_PATH" ]; then
     DB_SIZE=$(du -sb "$DB_PATH" 2>/dev/null | cut -f1)
-    if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
+    if [ -n "$DB_SIZE" ] && [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
         echo "Размер базы $DB_PATH превышает 5GB ($DB_SIZE байт). Начинаем очистку..."
         systemctl stop 0g
         find "$DB_PATH" -type f -delete
@@ -37,7 +53,7 @@ else
 fi
 
 # === Добавление в cron ===
-CRON_JOB="0 9 * * * for file in /var/log/syslog.1 /var/log/syslog /root/0g-storage-node/run/log/zgs.log.*; do for real_file in \$(ls \$file 2>/dev/null); do [ -f \"\$real_file\" ] && [ \$(du -b \"\$real_file\" | cut -f1) -gt 1073741824 ] && cat /dev/null > \"\$real_file\"; done; done; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
+CRON_JOB="0 9 * * * find $LOG_DIR -type f -name \"$LOG_PATTERN\" -size +1G -exec cat /dev/null > {} \\;; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
 (crontab -l 2>/dev/null | grep -v "$DB_PATH"; echo "$CRON_JOB") | crontab -
 echo "Задача добавлена в cron (запуск каждый день в 9:00)"
 
