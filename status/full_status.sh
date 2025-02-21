@@ -29,9 +29,9 @@ analyze_containers() {
   while IFS=';' read -r name status created_at; do
     container_info="$name (Статус: $status, Создан: $created_at)"
     
-    if [[ " ${NECESSARY_CONTAINERS[@]} " =~ " $name " ]]; then
+    if [[ " ${NECESSARY_CONTAINERS[*]} " =~ " $name " ]]; then
       DOCKER_TO_KEEP+=("$container_info")
-    elif [[ " ${UNNECESSARY_CONTAINERS[@]} " =~ " $name " ]]; then
+    elif [[ " ${UNNECESSARY_CONTAINERS[*]} " =~ " $name " ]]; then
       DOCKER_TO_REMOVE+=("$container_info")
     else
       DOCKER_UNKNOWN+=("$container_info")
@@ -42,9 +42,9 @@ analyze_containers() {
 # Функция для анализа файлов и папок
 analyze_items() {
   for item in "${ITEMS[@]}"; do
-    if [[ " ${NECESSARY_ITEMS[@]} " =~ " $item " ]]; then
+    if [[ " ${NECESSARY_ITEMS[*]} " =~ " $item " ]]; then
       FILES_TO_KEEP+=("$item")
-    elif [[ " ${UNNECESSARY_ITEMS[@]} " =~ " $item " ]]; then
+    elif [[ " ${UNNECESSARY_ITEMS[*]} " =~ " $item " ]]; then
       FILES_TO_REMOVE+=("$item")
     else
       FILES_UNKNOWN+=("$item")
@@ -57,12 +57,12 @@ analyze_containers
 analyze_items
 
 # Вывод отчета
-echo "\n===== Docker-контейнеры ====="
-echo "\nНеобходимые контейнеры:"; printf '%s\n' "${DOCKER_TO_KEEP[@]}"
-echo "\nКонтейнеры на удаление:"; printf '%s\n' "${DOCKER_TO_REMOVE[@]}"
-echo "\nНеизвестные контейнеры:"; printf '%s\n' "${DOCKER_UNKNOWN[@]}"
+echo -e "\n===== Docker-контейнеры ====="
+echo -e "\nНеобходимые контейнеры:"; printf '%s\n' "${DOCKER_TO_KEEP[@]}"
+echo -e "\nКонтейнеры на удаление:"; printf '%s\n' "${DOCKER_TO_REMOVE[@]}"
+echo -e "\nНеизвестные контейнеры:"; printf '%s\n' "${DOCKER_UNKNOWN[@]}"
 
-echo "\n===== Файлы и папки ====="
-echo "\nНеобходимые файлы и папки:"; printf '%s\n' "${FILES_TO_KEEP[@]}"
-echo "\nФайлы и папки на удаление:"; printf '%s\n' "${FILES_TO_REMOVE[@]}"
-echo "\nНеизвестные файлы и папки:"; printf '%s\n' "${FILES_UNKNOWN[@]}"
+echo -e "\n===== Файлы и папки ====="
+echo -e "\nНеобходимые файлы и папки:"; printf '%s\n' "${FILES_TO_KEEP[@]}"
+echo -e "\nФайлы и папки на удаление:"; printf '%s\n' "${FILES_TO_REMOVE[@]}"
+echo -e "\nНеизвестные файлы и папки:"; printf '%s\n' "${FILES_UNKNOWN[@]}"
