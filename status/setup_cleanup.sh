@@ -10,9 +10,14 @@ echo "=== Выполняем очистку логов и базы ==="
 
 # === Очистка логов, если они больше 1GB ===
 for file in "${LOG_FILES[@]}"; do
-    if [ -f "$file" ] && [ $(du -b "$file" | cut -f1) -gt 2147483648 ]; then
-        cat /dev/null > "$file"
-        echo "Очищен: $file"
+    if [ -n "$file" ] && [ -f "$file" ]; then  # Проверяем, что файл не пустой и существует
+        FILE_SIZE=$(du -b "$file" | cut -f1)
+        if [ "$FILE_SIZE" -gt 2147483648 ]; then
+            cat /dev/null > "$file"
+            echo "Очищен: $file"
+        fi
+    else
+        echo "Файл $file не найден, пропускаем."
     fi
 done
 
