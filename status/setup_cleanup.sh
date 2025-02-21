@@ -10,9 +10,9 @@ echo "=== Выполняем очистку логов и базы ==="
 
 # === Очистка логов, если они больше 1GB ===
 for file in "${LOG_FILES[@]}"; do
-    if [ -n "$file" ] && [ -f "$file" ]; then  # Проверяем, что файл не пустой и существует
-        FILE_SIZE=$(du -b "$file" | cut -f1)
-        if [ "$FILE_SIZE" -gt 2147483648 ]; then
+    if [ -n "$file" ] && [ -e "$file" ]; then  # Проверяем, что файл не пустой и существует
+        FILE_SIZE=$(du -b "$file" 2>/dev/null | cut -f1)
+        if [ -n "$FILE_SIZE" ] && [ "$FILE_SIZE" -gt 2147483648 ]; then
             cat /dev/null > "$file"
             echo "Очищен: $file"
         fi
@@ -23,8 +23,8 @@ done
 
 # === Проверяем размер базы перед очисткой ===
 if [ -d "$DB_PATH" ]; then
-    DB_SIZE=$(du -sb "$DB_PATH" | cut -f1)
-    if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
+    DB_SIZE=$(du -sb "$DB_PATH" 2>/dev/null | cut -f1)
+    if [ -n "$DB_SIZE" ] && [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
         echo "Размер базы $DB_PATH превышает 5GB ($DB_SIZE байт). Начинаем очистку..."
         systemctl stop 0g
         find "$DB_PATH" -type f -delete
