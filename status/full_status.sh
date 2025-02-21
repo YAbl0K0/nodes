@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Автоматическое создание имени файла отчета с текущей датой и временем
-REPORT_FILENAME="combined_report_$(date '+%Y-%m-%d_%H-%M-%S').txt"
-REPORT_FILE="./$REPORT_FILENAME"
-
 # Параметры для Docker-контейнеров
 NECESSARY_CONTAINERS=("elixir" "ipfs_node" "orchestrator" "shardeum-dashboard" "updater" "mongodb" "docker-watchtower-1")
 UNNECESSARY_CONTAINERS=("subspace_docker-node-1" "allora-worker" "boolnetwork" "subspace_docker-farmer-1" "kroma-validator" "kroma-node" "kroma-geth" "run_nillion" "allora-worker" "source-02" "source-03" "source-01" "bevm-node")
@@ -16,23 +12,23 @@ UNNECESSARY_ITEMS=("0gchain_snapshot.lz4" "0gchain_snapshot.lz4.aria2" "rusk" "n
 ALL_CONTAINERS=$(docker ps -a --format '{{.Names}};{{.Status}};{{.CreatedAt}}')
 
 # Сбор файлов и папок в текущей директории
-ITEMS=$(ls)
+ITEMS=($(find . -mindepth 1 -maxdepth 1 -printf "%f\n"))
 
 # Массивы для классификации Docker-контейнеров
-DOCKER_TO_KEEP=()     # Запущенные и необходимые контейнеры
-DOCKER_TO_REMOVE=()   # Контейнеры на удаление
-DOCKER_UNKNOWN=()     # Неизвестные контейнеры
+DOCKER_TO_KEEP=()
+DOCKER_TO_REMOVE=()
+DOCKER_UNKNOWN=()
 
 # Массивы для классификации файлов и папок
-FILES_TO_KEEP=()      # Необходимые файлы и папки
-FILES_TO_REMOVE=()    # Файлы и папки на удаление
-FILES_UNKNOWN=()      # Неизвестные файлы и папки
+FILES_TO_KEEP=()
+FILES_TO_REMOVE=()
+FILES_UNKNOWN=()
 
 # Функция для анализа Docker-контейнеров
 analyze_containers() {
   while IFS=';' read -r name status created_at; do
     container_info="$name (Статус: $status, Создан: $created_at)"
-
+    
     if [[ " ${NECESSARY_CONTAINERS[@]} " =~ " $name " ]]; then
       DOCKER_TO_KEEP+=("$container_info")
     elif [[ " ${UNNECESSARY_CONTAINERS[@]} " =~ " $name " ]]; then
@@ -45,7 +41,7 @@ analyze_containers() {
 
 # Функция для анализа файлов и папок
 analyze_items() {
-  for item in $ITEMS; do
+  for item in "${ITEMS[@]}"; do
     if [[ " ${NECESSARY_ITEMS[@]} " =~ " $item " ]]; then
       FILES_TO_KEEP+=("$item")
     elif [[ " ${UNNECESSARY_ITEMS[@]} " =~ " $item " ]]; then
@@ -60,10 +56,13 @@ analyze_items() {
 analyze_containers
 analyze_items
 
-# Запись отчета в файл в одну строку в нужном порядке
-{
-  echo "$(date '+%Y-%m-%d'); FILES_TO_KEEP: $(IFS=','; echo "${FILES_TO_KEEP[*]}"), FILES_TO_REMOVE: $(IFS=','; echo "${FILES_TO_REMOVE[*]}"), FILES_UNKNOWN: $(IFS=','; echo "${FILES_UNKNOWN[*]}"), DOCKER_TO_KEEP: $(IFS=','; echo "${DOCKER_TO_KEEP[*]}"), DOCKER_TO_REMOVE: $(IFS=','; echo "${DOCKER_TO_REMOVE[*]}"), DOCKER_UNKNOWN: $(IFS=','; echo "${DOCKER_UNKNOWN[*]}")"
-} > "$REPORT_FILE"
+# Вывод отчета
+echo "\n===== Docker-контейнеры ====="
+echo "\nНеобходимые контейнеры:"; printf '%s\n' "${DOCKER_TO_KEEP[@]}"
+echo "\nКонтейнеры на удаление:"; printf '%s\n' "${DOCKER_TO_REMOVE[@]}"
+echo "\nНеизвестные контейнеры:"; printf '%s\n' "${DOCKER_UNKNOWN[@]}"
 
-# Сообщение об успешной записи отчета
-echo "Отчет сохранен в $REPORT_FILE"
+echo "\n===== Файлы и папки ====="
+echo "\nНеобходимые файлы и папки:"; printf '%s\n' "${FILES_TO_KEEP[@]}"
+echo "\nФайлы и папки на удаление:"; printf '%s\n' "${FILES_TO_REMOVE[@]}"
+echo "\nНеизвестные файлы и папки:"; printf '%s\n' "${FILES_UNKNOWN[@]}"
