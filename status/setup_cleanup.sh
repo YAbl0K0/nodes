@@ -4,7 +4,7 @@
 LOG_FILES=("/var/log/syslog.1" "/var/log/syslog" "/root/0g-storage-node/run/log/zgs.log.*")
 DB_PATH="/root/.0gchain/data/tx_index.db/"
 DB_SIZE_LIMIT=5368709120  # 5GB в байтах
-CRON_JOB="0 9 * * * for file in /var/log/syslog.1 /var/log/syslog /root/0g-storage-node/run/log/zgs.log.*; do [ -f \"$file\" ] && [ $(du -b \"$file\" | cut -f1) -gt 1073741824 ] && cat /dev/null > \"$file\"; done; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
+CRON_JOB="0 9 * * * for file in /var/log/syslog.1 /var/log/syslog /root/0g-storage-node/run/log/zgs.log.*; do [ -f \"$file\" ] && [ \$(du -b \"$file\" 2>/dev/null | cut -f1) -gt 1073741824 ] && cat /dev/null > \"$file\"; done; systemctl stop 0g && find $DB_PATH -type f -delete && systemctl start 0g"
 
 echo "=== Выполняем очистку логов и базы ==="
 
