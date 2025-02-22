@@ -40,11 +40,15 @@ sudo systemctl start 0g
 
 # === Очистка логов в $LOG_DIR, если они больше 1 ГБ ===
 if [ -d "$LOG_DIR" ]; then
+    echo "Проверяем файлы логов в $LOG_DIR..."
     find "$LOG_DIR" -type f -name "$LOG_PATTERN" | while read -r log_file; do
         LOG_SIZE=$(du -b "$log_file" | cut -f1)
+        echo "Найден файл: $log_file (размер: $LOG_SIZE байт)"
         if [ "$LOG_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
-            echo "Очищаем $log_file (размер: $LOG_SIZE байт)..."
+            echo "Очищаем $log_file..."
             truncate -s 0 "$log_file"
+        else
+            echo "Файл $log_file не превышает 1 ГБ, пропускаем."
         fi
     done
 else
@@ -55,10 +59,15 @@ fi
 for file in "${SYSLOG_FILES[@]}"; do
     if [ -f "$file" ]; then
         FILE_SIZE=$(du -b "$file" | cut -f1)
+        echo "Проверяем $file (размер: $FILE_SIZE байт)"
         if [ "$FILE_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
-            echo "Очищаем $file (размер: $FILE_SIZE байт)..."
+            echo "Очищаем $file..."
             sudo truncate -s 0 "$file"
+        else
+            echo "Файл $file не превышает 1 ГБ, пропускаем."
         fi
+    else
+        echo "Файл $file не найден, пропускаем."
     fi
 done
 
