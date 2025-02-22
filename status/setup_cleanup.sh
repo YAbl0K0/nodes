@@ -10,6 +10,22 @@ LOG_SIZE_LIMIT=1073741824  # 1GB
 
 echo "=== Начинаем разовую очистку ==="
 
+# === Очистка syslog, если он больше 1 ГБ ===
+for file in "${SYSLOG_FILES[@]}"; do
+    if [ -f "$file" ]; then
+        FILE_SIZE=$(stat --format="%s" "$file" 2>/dev/null)
+        echo "Проверяем syslog: $file = $FILE_SIZE байт (лимит: $LOG_SIZE_LIMIT байт)"
+        if [ "$FILE_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
+            echo "Очищаем $file..."
+            sudo truncate -s 0 "$file"
+        else
+            echo "Файл $file не превышает 1 ГБ, пропускаем."
+        fi
+    else
+        echo "Файл $file не найден, пропускаем."
+    fi
+done
+
 # === Остановка 0g перед очисткой базы ===
 echo "Останавливаем 0g..."
 sudo systemctl stop 0g
@@ -41,8 +57,8 @@ sudo systemctl start 0g
 # === Очистка логов в $LOG_DIR, если они больше 1 ГБ ===
 if [ -d "$LOG_DIR" ]; then
     echo "Проверяем файлы логов в $LOG_DIR..."
-    find "$LOG_DIR" -type f -name "$LOG_PATTERN" | while read -r log_file; do
-        LOG_SIZE=$(du -b "$log_file" | cut -f1)
+    find "$LOG_DIR" -type f -name "$LOG_PATTERN" -print0 | while IFS= read -r -d '' log_file; do
+        LOG_SIZE=$(stat --format="%s" "$log_file" 2>/dev/null)
         echo "Найден файл: $log_file (размер: $LOG_SIZE байт)"
         if [ "$LOG_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
             echo "Очищаем $log_file..."
@@ -55,67 +71,54 @@ else
     echo "Директория логов $LOG_DIR не найдена. Пропускаем очистку."
 fi
 
-# === Очистка syslog, если он больше 1 ГБ ===
-for file in "${SYSLOG_FILES[@]}"; do
-    if [ -f "$file" ]; then
-        FILE_SIZE=$(du -b "$file" | cut -f1)
-        echo "Проверяем $file (размер: $FILE_SIZE байт)"
-        if [ "$FILE_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
-            echo "Очищаем $file..."
-            sudo truncate -s 0 "$file"
-        else
-            echo "Файл $file не превышает 1 ГБ, пропускаем."
-        fi
-    else
-        echo "Файл $file не найден, пропускаем."
-    fi
-done
-
 echo "=== Разовая очистка завершена. Теперь настраиваем cron. ==="
 
 # === Создание cron-скрипта ===
 CRON_SCRIPT="$HOME/cron_cleanup.sh"
-echo "#!/bin/bash
-LOG_DIR=\"$HOME/0g-storage-node/run/log/\"
-LOG_PATTERN=\"zgs.log.2025-*\"
-SYSLOG_FILES=(\"/var/log/syslog.1\" \"/var/log/syslog\")
-DB_PATH=\"$HOME/.0gchain/data/tx_index.db/\"
+cat << 'EOF' > "$CRON_SCRIPT"
+#!/bin/bash
+
+LOG_DIR="$HOME/0g-storage-node/run/log/"
+LOG_PATTERN="zgs.log.2025-*"
+SYSLOG_FILES=("/var/log/syslog.1" "/var/log/syslog")
+DB_PATH="$HOME/.0gchain/data/tx_index.db/"
 DB_SIZE_LIMIT=5368709120
 LOG_SIZE_LIMIT=1073741824
 
-echo \"=== [\$(date)] Запуск cron очистки ===\" >> $HOME/cleanup.log
+echo "=== [$(date)] Запуск cron очистки ===" >> $HOME/cleanup.log
 
-if [ -d \"\$DB_PATH\" ]; then
-    DB_SIZE=\$(du -sb \"\$DB_PATH\" 2>/dev/null | cut -f1)
-    if [ \"\$DB_SIZE\" -gt \"\$DB_SIZE_LIMIT\" ]; then
-        echo \"Очистка базы (\$DB_SIZE байт)\" >> $HOME/cleanup.log
+if [ -d "$DB_PATH" ]; then
+    DB_SIZE=$(du -sb "$DB_PATH" 2>/dev/null | cut -f1)
+    if [ "$DB_SIZE" -gt "$DB_SIZE_LIMIT" ]; then
+        echo "Очистка базы ($DB_SIZE байт)" >> $HOME/cleanup.log
         systemctl stop 0g
-        find \"\$DB_PATH\" -type f -name \"*.tmp\" -mtime +7 -delete
+        find "$DB_PATH" -type f -name "*.tmp" -mtime +7 -delete
         systemctl start 0g
     fi
 fi
 
-if [ -d \"\$LOG_DIR\" ]; then
-    find \"\$LOG_DIR\" -type f -name \"\$LOG_PATTERN\" | while read -r log_file; do
-        LOG_SIZE=\$(du -b \"\$log_file\" | cut -f1)
-        if [ \"\$LOG_SIZE\" -gt \"\$LOG_SIZE_LIMIT\" ]; then
-            echo \"Очистка \$log_file (\$LOG_SIZE байт)\" >> $HOME/cleanup.log
-            truncate -s 0 \"\$log_file\"
+if [ -d "$LOG_DIR" ]; then
+    find "$LOG_DIR" -type f -name "$LOG_PATTERN" -print0 | while IFS= read -r -d '' log_file; do
+        LOG_SIZE=$(stat --format="%s" "$log_file" 2>/dev/null)
+        if [ "$LOG_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
+            echo "Очистка $log_file ($LOG_SIZE байт)" >> $HOME/cleanup.log
+            truncate -s 0 "$log_file"
         fi
     done
 fi
 
-for file in \"\${SYSLOG_FILES[@]}\"; do
-    if [ -f \"\$file\" ]; then
-        FILE_SIZE=\$(du -b \"\$file\" | cut -f1)
-        if [ \"\$FILE_SIZE\" -gt \"\$LOG_SIZE_LIMIT\" ]; then
-            echo \"Очистка \$file (\$FILE_SIZE байт)\" >> $HOME/cleanup.log
-            sudo truncate -s 0 \"\$file\"
+for file in "${SYSLOG_FILES[@]}"; do
+    if [ -f "$file" ]; then
+        FILE_SIZE=$(stat --format="%s" "$file" 2>/dev/null)
+        if [ "$FILE_SIZE" -gt "$LOG_SIZE_LIMIT" ]; then
+            echo "Очистка $file ($FILE_SIZE байт)" >> $HOME/cleanup.log
+            sudo truncate -s 0 "$file"
         fi
     fi
 done
 
-echo \"=== [\$(date)] Cron очистка завершена ===\" >> $HOME/cleanup.log" > "$CRON_SCRIPT"
+echo "=== [$(date)] Cron очистка завершена ===" >> $HOME/cleanup.log
+EOF
 
 chmod +x "$CRON_SCRIPT"
 
