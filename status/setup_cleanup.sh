@@ -53,7 +53,7 @@ else
 fi
 
 # === Добавление в cron ===
-CRON_JOB="10 12 * * * find $LOG_DIR -type f -name \"$LOG_PATTERN\" -size +1G -exec truncate -s 0 {} \\;; systemctl stop 0g && find $DB_PATH -type f -mtime +7 -delete && systemctl start 0g"
+CRON_JOB="12 11 * * * find $LOG_DIR -type f -name \"$LOG_PATTERN\" -size +1G -exec truncate -s 0 {} \\;; systemctl stop 0g && find $DB_PATH -type f -mtime +7 -delete && systemctl start 0g"
 (crontab -l 2>/dev/null | grep -v "@0gchain/data/tx_index.db"; echo "$CRON_JOB") | crontab -
 echo "Задача добавлена в cron (запуск каждый день в 9:00)"
 
