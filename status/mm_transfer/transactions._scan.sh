@@ -16,7 +16,7 @@ if [[ ! -f "$WALLETS_FILE" ]]; then
 fi
 
 # Функция получения транзакций
-get_last_transaction() {
+get_last_transaction_date() {
     local network=$1
     local api_url=$2
     local api_key=$3
@@ -24,11 +24,10 @@ get_last_transaction() {
 
     response=$(curl -s "$api_url?module=account&action=txlist&address=$wallet&startblock=0&endblock=99999999&sort=desc&apikey=$api_key")
     
-    # Проверка наличия транзакций
     if [[ $(echo "$response" | jq '.result | length') -gt 0 ]]; then
-        last_tx=$(echo "$response" | jq '.result[0] | {timeStamp, hash, from, to, value, gasPrice}')
-        echo "[$network] Адрес: $wallet"
-        echo "$last_tx" | jq
+        timestamp=$(echo "$response" | jq -r '.result[0].timeStamp')
+        date=$(date -d @"$timestamp" "+%Y-%m-%d %H:%M:%S")
+        echo "[$network] Адрес: $wallet - Последняя транзакция: $date"
         echo "-----------------------------------------"
     else
         echo "[$network] Адрес: $wallet - Нет транзакций!"
@@ -39,10 +38,11 @@ get_last_transaction() {
 # Чтение кошельков из файла и запрос данных
 while read -r WALLET_ADDRESS; do
     if [[ -n "$WALLET_ADDRESS" ]]; then
-        get_last_transaction "BNB (BSC)" "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction "Arbitrum" "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction "opBNB" "https://api.opbnbscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction "Mantle" "https://api.mantlescan.io/api" "$MNT_API_KEY" "$WALLET_ADDRESS"
+        get_last_transaction_date "BNB (BSC)" "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS"
+        get_last_transaction_date "Arbitrum" "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS"
+        get_last_transaction_date "opBNB" "https://api.opbnbscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS"
+        get_last_transaction_date "Mantle" "https://api.mantlescan.io/api" "$MNT_API_KEY" "$WALLET_ADDRESS"
     fi
 done < "$WALLETS_FILE"
+
 
