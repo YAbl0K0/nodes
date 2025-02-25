@@ -40,7 +40,7 @@ while read -r WALLET_ADDRESS; do
     if [[ -n "$WALLET_ADDRESS" ]]; then
         get_last_transaction_date "BNB (BSC)" "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS"
         get_last_transaction_date "Arbitrum" "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction_date "opBNB" "https://api.opbnbscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS"
+        get_last_transaction_date "opBNB" "https://api-opbnb.bscscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS"
         get_last_transaction_date "Mantle" "https://api.mantlescan.xyz/api" "$MNT_API_KEY" "$WALLET_ADDRESS"
     fi
 done < "$WALLETS_FILE"
