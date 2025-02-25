@@ -15,34 +15,34 @@ if [[ ! -f "$WALLETS_FILE" ]]; then
     exit 1
 fi
 
-# Функция получения транзакций
+# Функция получения последней транзакции (только дата)
 get_last_transaction_date() {
-    local network=$1
-    local api_url=$2
-    local api_key=$3
-    local wallet=$4
+    local api_url=$1
+    local api_key=$2
+    local wallet=$3
 
     response=$(curl -s "$api_url?module=account&action=txlist&address=$wallet&startblock=0&endblock=99999999&sort=desc&apikey=$api_key")
     
     if [[ $(echo "$response" | jq '.result | length') -gt 0 ]]; then
         timestamp=$(echo "$response" | jq -r '.result[0].timeStamp')
-        date=$(date -d @"$timestamp" "+%Y-%m-%d %H:%M:%S")
-        echo "[$network] Адрес: $wallet - Последняя транзакция: $date"
-        echo "-----------------------------------------"
+        date=$(date -d @"$timestamp" "+%Y-%m-%d") # Убираем время, оставляем только дату
+        echo "$date"
     else
-        echo "[$network] Адрес: $wallet - Нет транзакций!"
-        echo "-----------------------------------------"
+        echo "Нет транзакций"
     fi
 }
+
+# Заголовок таблицы
+echo "Адрес; BSC; MNT; opBNB; Arbitrum"
 
 # Чтение кошельков из файла и запрос данных
 while read -r WALLET_ADDRESS; do
     if [[ -n "$WALLET_ADDRESS" ]]; then
-        get_last_transaction_date "BNB (BSC)" "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction_date "Arbitrum" "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction_date "opBNB" "https://api-opbnb.bscscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS"
-        get_last_transaction_date "Mantle" "https://api.mantlescan.xyz/api" "$MNT_API_KEY" "$WALLET_ADDRESS"
+        BSC_DATE=$(get_last_transaction_date "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS")
+        MNT_DATE=$(get_last_transaction_date "https://api.mantlescan.xyz/api" "$MNT_API_KEY" "$WALLET_ADDRESS")
+        OPBNB_DATE=$(get_last_transaction_date "https://api-opbnb.bscscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS")
+        ARB_DATE=$(get_last_transaction_date "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS")
+
+        echo "$WALLET_ADDRESS; $BSC_DATE; $MNT_DATE; $OPBNB_DATE; $ARB_DATE"
     fi
 done < "$WALLETS_FILE"
-
-
