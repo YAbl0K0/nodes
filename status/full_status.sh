@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Определение цветов для вывода
+RED='\033[0;31m'    # Красный (Удалить)
+GREEN='\033[0;32m'  # Зеленый (Оставить)
+BLUE='\033[0;34m'   # Синий (Неизвестное)
+NC='\033[0m'        # Сброс цвета
+
 # Параметры для Docker-контейнеров
 NECESSARY_CONTAINERS=("elixir" "ipfs_node" "orchestrator" "shardeum-dashboard" "updater" "mongodb" "docker-watchtower-1")
 UNNECESSARY_CONTAINERS=("subspace_docker-node-1" "allora-worker" "boolnetwork" "subspace_docker-farmer-1" "kroma-validator" "kroma-node" "kroma-geth" "run_nillion" "allora-worker" "source-02" "source-03" "source-01" "bevm-node")
@@ -14,55 +20,37 @@ ALL_CONTAINERS=$(docker ps -a --format '{{.Names}};{{.Status}};{{.CreatedAt}}')
 # Сбор файлов и папок в текущей директории
 ITEMS=($(find . -mindepth 1 -maxdepth 1 -printf "%f\n"))
 
-# Массивы для классификации Docker-контейнеров
-DOCKER_TO_KEEP=()
-DOCKER_TO_REMOVE=()
-DOCKER_UNKNOWN=()
-
-# Массивы для классификации файлов и папок
-FILES_TO_KEEP=()
-FILES_TO_REMOVE=()
-FILES_UNKNOWN=()
-
-# Функция для анализа Docker-контейнеров
+# Функция анализа Docker-контейнеров
 analyze_containers() {
   while IFS=';' read -r name status created_at; do
     container_info="$name (Статус: $status, Создан: $created_at)"
     
     if [[ " ${NECESSARY_CONTAINERS[*]} " =~ " $name " ]]; then
-      DOCKER_TO_KEEP+=("$container_info")
+      echo -e "${GREEN}✔ Оставить: $container_info${NC}"
     elif [[ " ${UNNECESSARY_CONTAINERS[*]} " =~ " $name " ]]; then
-      DOCKER_TO_REMOVE+=("$container_info")
+      echo -e "${RED}✖ Удалить: $container_info${NC}"
     else
-      DOCKER_UNKNOWN+=("$container_info")
+      echo -e "${BLUE}❓ Неизвестный: $container_info${NC}"
     fi
   done <<< "$ALL_CONTAINERS"
 }
 
-# Функция для анализа файлов и папок
+# Функция анализа файлов и папок
 analyze_items() {
   for item in "${ITEMS[@]}"; do
     if [[ " ${NECESSARY_ITEMS[*]} " =~ " $item " ]]; then
-      FILES_TO_KEEP+=("$item")
+      echo -e "${GREEN}✔ Оставить: $item${NC}"
     elif [[ " ${UNNECESSARY_ITEMS[*]} " =~ " $item " ]]; then
-      FILES_TO_REMOVE+=("$item")
+      echo -e "${RED}✖ Удалить: $item${NC}"
     else
-      FILES_UNKNOWN+=("$item")
+      echo -e "${BLUE}❓ Неизвестный: $item${NC}"
     fi
   done
 }
 
-# Анализируем контейнеры и файлы
+# Вывод заголовков и анализ
+echo -e "\n===== ${GREEN}Docker-контейнеры${NC} ====="
 analyze_containers
+
+echo -e "\n===== ${GREEN}Файлы и папки${NC} ====="
 analyze_items
-
-# Вывод отчета
-echo -e "\n===== Docker-контейнеры ====="
-echo -e "\nНеобходимые контейнеры:"; printf '%s\n' "${DOCKER_TO_KEEP[@]}"
-echo -e "\nКонтейнеры на удаление:"; printf '%s\n' "${DOCKER_TO_REMOVE[@]}"
-echo -e "\nНеизвестные контейнеры:"; printf '%s\n' "${DOCKER_UNKNOWN[@]}"
-
-echo -e "\n===== Файлы и папки ====="
-echo -e "\nНеобходимые файлы и папки:"; printf '%s\n' "${FILES_TO_KEEP[@]}"
-echo -e "\nФайлы и папки на удаление:"; printf '%s\n' "${FILES_TO_REMOVE[@]}"
-echo -e "\nНеизвестные файлы и папки:"; printf '%s\n' "${FILES_UNKNOWN[@]}"
