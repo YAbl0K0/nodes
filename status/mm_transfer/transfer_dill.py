@@ -2,7 +2,7 @@ from web3 import Web3
 import time
 
 # Настройки сети Dill
-RPC_URL = "https://rpc.dill.xyz"
+RPC_URL = "https://rpc-alps.dill.xyz"
 CHAIN_ID = 102125  # Укажите правильный Chain ID сети Dill
 GAS_LIMIT = 500000  # Базовый лимит газа
 GAS_PRICE = lambda: min(max(w3.eth.gas_price, w3.to_wei(2, 'gwei')), w3.to_wei(10, 'gwei'))  # От 2 до 10 Gwei
