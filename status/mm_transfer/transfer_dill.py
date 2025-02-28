@@ -6,9 +6,9 @@ from web3 import Web3
 # Настройки сети Dill
 RPC_URL = "https://rpc-alps.dill.xyz"
 CHAIN_ID = 102125
-GAS_LIMIT = 500000  # Базовый лимит газа
+DEFAULT_GAS_LIMIT = 500000  # Базовый лимит газа (используется для оценки)
 
-# Подключение к Web3 (должно быть перед `GAS_PRICE`)
+# Подключение к Web3
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 assert w3.is_connected(), "Ошибка: Не удалось подключиться к сети Dill!"
 
@@ -19,7 +19,7 @@ def get_gas_price():
         return min(max(gas_price, w3.to_wei(2, 'gwei')), w3.to_wei(10, 'gwei'))
     except Exception as e:
         print(f"❌ Ошибка получения цены газа: {e}")
-        return w3.to_wei(5, 'gwei')  # Устанавливаем дефолтное значение 5 Gwei
+        return w3.to_wei(5, 'gwei')  # Дефолтное значение 5 Gwei
 
 def to_checksum(address):
     """Приводит адрес к checksum-формату или возвращает None при ошибке"""
@@ -43,7 +43,7 @@ def get_dill_balance(address):
         return 0.000
 
 def send_dill(private_key, sender, recipient):
-    """Отправляет весь доступный DILL (минус газ)"""
+    """Отправляет весь доступный DILL (оставляя 0)"""
     eth_balance = get_dill_balance(sender)
 
     print(f"💰 Баланс {sender}: {eth_balance} DILL")
@@ -53,8 +53,18 @@ def send_dill(private_key, sender, recipient):
         return  # Баланс 0, пропускаем
 
     gas_price = get_gas_price()
-    estimated_gas_cost = GAS_LIMIT * gas_price
-    required_eth = float(w3.from_wei(estimated_gas_cost, 'ether'))  # Приводим к float
+
+    # Оцениваем реальный лимит газа
+    try:
+        estimated_gas = w3.eth.estimate_gas({
+            'from': sender,
+            'to': recipient,
+            'value': w3.to_wei(eth_balance, 'ether')
+        })
+    except:
+        estimated_gas = DEFAULT_GAS_LIMIT  # Если не удалось оценить, берем дефолтный
+
+    required_eth = w3.from_wei(estimated_gas * gas_price, 'ether')  # Считаем газ точно
 
     print(f"🛠 Требуется {required_eth} DILL на газ | Баланс {eth_balance} DILL")
 
@@ -62,7 +72,7 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    send_amount = float(eth_balance) - float(required_eth)  # Теперь оба float
+    send_amount = eth_balance - required_eth  # Теперь отправляем **всё, что останется после газа**
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
@@ -74,7 +84,7 @@ def send_dill(private_key, sender, recipient):
         tx = {
             'to': recipient,
             'value': w3.to_wei(send_amount, 'ether'),
-            'gas': GAS_LIMIT,
+            'gas': estimated_gas,  # Используем точный лимит газа
             'gasPrice': gas_price,
             'nonce': nonce,
             'chainId': CHAIN_ID
