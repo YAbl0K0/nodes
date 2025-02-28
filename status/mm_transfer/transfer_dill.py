@@ -1,6 +1,10 @@
 import sys
 import time
 from web3 import Web3
+from decimal import Decimal, getcontext
+
+# Устанавливаем высокую точность
+getcontext().prec = 30
 
 # Подключение к Web3 (указываем RPC для сети DILL)
 RPC_URL = "https://rpc-alps.dill.xyz"
@@ -28,8 +32,8 @@ def get_dill_balance(address):
         return 0.0
 
 def send_dill(private_key, sender, recipient):
-    """Отправляет весь доступный DILL (оставляя 0)"""
-    eth_balance = get_dill_balance(sender)
+    """Отправляет весь доступный DILL (оставляя 1 wei)"""
+    eth_balance = Decimal(get_dill_balance(sender))
 
     print(f"💰 Баланс {sender}: {eth_balance} DILL")
 
@@ -37,11 +41,11 @@ def send_dill(private_key, sender, recipient):
         print(f"⚠️ Пропускаем {sender}: баланс 0 DILL")
         return  # Баланс 0, пропускаем
 
-    gas_price = get_gas_price()
+    gas_price = Decimal(get_gas_price())
 
-    # Рассчитываем стоимость газа
-    estimated_gas = DEFAULT_GAS_LIMIT
-    required_eth = w3.from_wei(estimated_gas * gas_price, 'ether')
+    # Оцениваем реальный лимит газа
+    estimated_gas = Decimal(DEFAULT_GAS_LIMIT)
+    required_eth = Decimal(w3.from_wei(estimated_gas * gas_price, 'ether'))
 
     print(f"🛠 Требуется {required_eth} DILL на газ | Баланс {eth_balance} DILL")
 
@@ -49,8 +53,14 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    # Отправляем максимум, оставляя 1 wei для округления
-    send_amount = eth_balance - required_eth - w3.from_wei(1, 'wei')
+    # Оставляем запас 1 wei (~0.000000000000000001 DILL) для избежания ошибок округления
+    safety_buffer = Decimal(w3.from_wei(1, 'wei'))
+
+    # Вычисляем сумму для отправки (в wei)
+    send_amount_wei = max(w3.to_wei(float(eth_balance - required_eth - safety_buffer), 'ether'), 1)  
+    send_amount = Decimal(w3.from_wei(send_amount_wei, 'ether'))  # Конвертация обратно в DILL
+
+    print(f"📤 Отправляем {send_amount} DILL → {recipient}")
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
@@ -61,9 +71,9 @@ def send_dill(private_key, sender, recipient):
     try:
         tx = {
             'to': recipient,
-            'value': w3.to_wei(send_amount, 'ether'),
-            'gas': estimated_gas,
-            'gasPrice': gas_price,
+            'value': int(send_amount_wei),  # Теперь `wei` гарантированно валидный
+            'gas': int(estimated_gas),
+            'gasPrice': int(gas_price),
             'nonce': nonce,
             'chainId': CHAIN_ID
         }
@@ -77,7 +87,7 @@ def send_dill(private_key, sender, recipient):
         with open("tx_hashes.log", "a") as log_file:
             log_file.write(f"{sender} -> {recipient}: {send_amount} DILL | TX: {tx_hash_hex}\n")
 
-        time.sleep(5)  # Задержка для избежания "nonce too low"
+        time.sleep(5)  # Задержка
     except Exception as e:
         print(f"❌ Ошибка при отправке с {sender}: {str(e)}")
         with open("errors.log", "a") as error_file:
