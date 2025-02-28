@@ -76,12 +76,16 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    # Добавляем запас (100 000 wei = 0.0000001 DILL)
-    safety_buffer = Decimal(w3.from_wei(100000, 'wei'))  # 0.0000001 DILL
-    send_amount = max(eth_balance - required_eth - safety_buffer, Decimal("0"))  # Оставляем запас, но не уходим в отрицательное
+    # Запас 1 wei (~0.000000000000000001 DILL) для избежания ошибок округления
+    safety_buffer = Decimal(w3.from_wei(1, 'wei'))  
 
-    # Округляем до 18 знаков
-    send_amount = send_amount.quantize(Decimal("0.000000000000000001"))
+    # Вычисляем сумму в wei, чтобы избежать ошибок округления
+    send_amount_wei = w3.to_wei(float(eth_balance - required_eth - safety_buffer), 'ether')
+    send_amount = Decimal(w3.from_wei(send_amount_wei, 'ether'))  # Приводим обратно в DILL
+
+    # Если send_amount выходит 0, отправляем минимально возможную сумму (1 wei)
+    min_transfer = Decimal(w3.from_wei(1, 'wei'))
+    send_amount = max(send_amount, min_transfer)
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
