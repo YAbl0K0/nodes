@@ -72,7 +72,7 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    send_amount = eth_balance - required_eth  # Теперь отправляем **всё, что останется после газа**
+    send_amount = eth_balance - required_eth - w3.from_wei(1, 'ether')  # Запас 1 wei
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
