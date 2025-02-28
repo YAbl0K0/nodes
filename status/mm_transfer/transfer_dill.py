@@ -32,8 +32,8 @@ def get_dill_balance(address):
         return 0.0
 
 def send_dill(private_key, sender, recipient):
-    """Отправляет весь доступный DILL (оставляя 1 wei)"""
-    eth_balance = Decimal(get_dill_balance(sender))
+    """Отправляет весь доступный DILL (вычитая только газ)"""
+    eth_balance = Decimal(get_dill_balance(sender)).quantize(Decimal("0.000000"))
 
     print(f"💰 Баланс {sender}: {eth_balance} DILL")
 
@@ -45,7 +45,7 @@ def send_dill(private_key, sender, recipient):
 
     # Оцениваем реальный лимит газа
     estimated_gas = Decimal(DEFAULT_GAS_LIMIT)
-    required_eth = Decimal(w3.from_wei(estimated_gas * gas_price, 'ether'))
+    required_eth = Decimal(w3.from_wei(estimated_gas * gas_price, 'ether')).quantize(Decimal("0.000000"))
 
     print(f"🛠 Требуется {required_eth} DILL на газ | Баланс {eth_balance} DILL")
 
@@ -53,18 +53,16 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    # Оставляем запас 1 wei (~0.000000000000000001 DILL) для избежания ошибок округления
-    safety_buffer = Decimal(w3.from_wei(1, 'wei'))
+    # Вычисляем сумму для отправки (точно: баланс - газ)
+    send_amount_wei = w3.to_wei(float(eth_balance - required_eth), 'ether')
 
-    # Вычисляем сумму для отправки (в wei)
-    send_amount_wei = max(w3.to_wei(float(eth_balance - required_eth - safety_buffer), 'ether'), 1)  
-    send_amount = Decimal(w3.from_wei(send_amount_wei, 'ether'))  # Конвертация обратно в DILL
-
-    print(f"📤 Отправляем {send_amount} DILL → {recipient}")
-
-    if send_amount <= 0:
+    if send_amount_wei <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
         return  # Нечего отправлять после вычета газа
+
+    send_amount = Decimal(w3.from_wei(send_amount_wei, 'ether')).quantize(Decimal("0.000000"))
+
+    print(f"📤 Отправляем {send_amount} DILL → {recipient}")
 
     nonce = w3.eth.get_transaction_count(sender, "pending")
 
