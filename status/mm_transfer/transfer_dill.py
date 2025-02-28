@@ -64,7 +64,7 @@ def send_dill(private_key, sender, recipient):
     except:
         estimated_gas = DEFAULT_GAS_LIMIT  # Если не удалось оценить, берем дефолтный
 
-    required_eth = w3.from_wei(estimated_gas * gas_price, 'ether')  # Считаем газ точно
+    required_eth = float(w3.from_wei(estimated_gas * gas_price, 'ether'))  # Приводим к float
 
     print(f"🛠 Требуется {required_eth} DILL на газ | Баланс {eth_balance} DILL")
 
@@ -72,7 +72,7 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    send_amount = eth_balance - required_eth - w3.from_wei(1, 'ether')  # Запас 1 wei
+    send_amount = float(eth_balance) - required_eth - float(w3.from_wei(1, 'ether'))  # Приводим все к float
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
