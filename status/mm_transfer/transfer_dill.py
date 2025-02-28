@@ -62,7 +62,7 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    send_amount = eth_balance - required_eth  # Теперь оба float
+    send_amount = float(eth_balance) - float(required_eth)  # Теперь оба float
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
