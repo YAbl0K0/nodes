@@ -72,9 +72,12 @@ def send_dill(private_key, sender, recipient):
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
-    # Оставляем небольшой запас (10 Gwei)
-    safety_buffer = float(w3.from_wei(10, 'gwei'))  # 10 Gwei (~0.00000001 DILL)
-    send_amount = eth_balance - required_eth - safety_buffer  # Теперь оставляем небольшой остаток
+    # Добавляем небольшой запас (100 000 wei = 0.0000001 DILL)
+    safety_buffer = float(w3.from_wei(100000, 'wei'))  # 0.0000001 DILL
+    send_amount = eth_balance - required_eth - safety_buffer  # Оставляем микроскопический запас
+
+    # Округляем, чтобы избежать проблем с округлением в wei
+    send_amount = round(send_amount, 18)
 
     if send_amount <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
@@ -98,7 +101,6 @@ def send_dill(private_key, sender, recipient):
         time.sleep(5)  # Задержка для избежания "nonce too low"
     except Exception as e:
         print(f"❌ Ошибка при отправке с {sender}: {str(e)}")
-
 
 def main():
     """Главная функция"""
