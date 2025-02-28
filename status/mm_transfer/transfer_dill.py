@@ -84,7 +84,7 @@ def send_dill(private_key, sender, recipient):
         return  # Нечего отправлять после вычета газа
 
     nonce = w3.eth.get_transaction_count(sender, "pending")
-    
+
     try:
         tx = {
             'to': recipient,
@@ -96,11 +96,19 @@ def send_dill(private_key, sender, recipient):
         }
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        print(f"✅ Отправлено {send_amount} DILL: {w3.to_hex(tx_hash)}")
+        tx_hash_hex = w3.to_hex(tx_hash)
+
+        print(f"✅ Отправлено {send_amount} DILL: {tx_hash_hex}")
+
+        # Логируем успешные транзакции в файл
+        with open("tx_hashes.log", "a") as log_file:
+            log_file.write(f"{sender} -> {recipient}: {send_amount} DILL | TX: {tx_hash_hex}\n")
 
         time.sleep(5)  # Задержка для избежания "nonce too low"
     except Exception as e:
         print(f"❌ Ошибка при отправке с {sender}: {str(e)}")
+        with open("errors.log", "a") as error_file:
+            error_file.write(f"Ошибка с {sender}: {str(e)}\n")
 
 def main():
     """Главная функция"""
@@ -127,6 +135,8 @@ def main():
                 time.sleep(3)  # Задержка между транзакциями
             except Exception as e:
                 print(f"❌ Ошибка обработки строки '{line.strip()}': {e}")
+                with open("errors.log", "a") as error_file:
+                    error_file.write(f"Ошибка обработки строки '{line.strip()}': {e}\n")
                 continue  # Пропускаем строки с ошибками
     except FileNotFoundError:
         print("❌ Файл addresses.txt не найден! Создайте файл и добавьте адреса.")
