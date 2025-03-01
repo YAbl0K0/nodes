@@ -8,9 +8,10 @@ NC='\033[0m'        # Сброс цвета
 # Параметры для Docker-контейнеров
 NECESSARY_CONTAINERS=("elixir" "shardeum-validator" "infernet-node" "deploy-fluentbit-1" "deploy-redis-1" "hello-world" "docker-watchtower-1")
 
-# Контейнеры для удаления
+# Контейнеры для удаления с комментариями
 UNNECESSARY_CONTAINERS_NAMES=("boolnetwork")
 UNNECESSARY_CONTAINERS_LINKS=("https://example.com/boolnetwork")
+UNNECESSARY_CONTAINERS_COMMENTS=("Старый контейнер, не используется")
 
 # Массивы для файлов и папок
 NECESSARY_ITEMS=(
@@ -21,11 +22,21 @@ NECESSARY_ITEMS=(
   "cron_cleanup.sh" "opt" ".bash_history" ".cache" ".npm" ".foundry" "foundry"
 )
 
-# Файлы для удаления
+# Файлы для удаления с комментариями
 UNNECESSARY_ITEMS_NAMES=(
   ".avail" "my-double-proc-squid" "rusk" "massa_backup.tar.gz" "heminetwork" "masa-oracle-go-testnet" ".masa"
   "lightning" "my-single-proc-squid" "massa_TEST.25.2_release_linux.tar.gz" "my-quad-proc-squid"
   "gear" "bevm" ".lightning" "my-triple-proc-squid" "massa_backup.tar21.gz" ".boolnetwork"
+)
+UNNECESSARY_ITEMS_COMMENTS=(
+  "Ненужный файл, создан в процессе тестов" "Неиспользуемый squid контейнер"
+  "Старый файл rusk, можно удалить" "Бэкап massa, больше не нужен"
+  "Файл из старого проекта heminetwork" "Masa testnet, не нужен" "Старые настройки masa"
+  "Файл lightning, можно удалить" "Одинарный squid, не используется"
+  "Старый релиз massa, больше не нужен" "Четырёхпроцессный squid, не используется"
+  "Старый файл gear, можно удалить" "BEVM больше не нужен"
+  "Файл lightning, копия" "Тройной squid, не используется"
+  "Старый архив massa, больше не нужен" "Файл boolnetwork, не используется"
 )
 
 # Сбор всех контейнеров
@@ -55,20 +66,22 @@ echo -e "\n===== ${RED}Docker-контейнеры (Удалить)${NC} ====="
 for i in "${!UNNECESSARY_CONTAINERS_NAMES[@]}"; do
   name="${UNNECESSARY_CONTAINERS_NAMES[$i]}"
   link="${UNNECESSARY_CONTAINERS_LINKS[$i]}"
+  comment="${UNNECESSARY_CONTAINERS_COMMENTS[$i]}"
   for container in "${ALL_CONTAINERS[@]}"; do
     if [[ "$container" == "$name" ]]; then
-      echo -e "${RED}✖ $name ($link) ()${NC}"
+      echo -e "${RED}✖ $name ($link) ($comment)${NC}"
     fi
   done
 done
 
 # Функция анализа файлов и папок (только удаление)
 echo -e "\n===== ${RED}Файлы и папки (Удалить)${NC} ====="
-for item in "${ITEMS[@]}"; do
-  for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
-    name="${UNNECESSARY_ITEMS_NAMES[$i]}"
+for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
+  name="${UNNECESSARY_ITEMS_NAMES[$i]}"
+  comment="${UNNECESSARY_ITEMS_COMMENTS[$i]}"
+  for item in "${ITEMS[@]}"; do
     if [[ "$item" == "$name" ]]; then
-      echo -e "${RED}✖ $name ()${NC}"
+      echo -e "${RED}✖ $name ($comment)${NC}"
     fi
   done
 done
