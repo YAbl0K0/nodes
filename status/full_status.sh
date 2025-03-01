@@ -6,21 +6,38 @@ BLUE='\033[0;34m'   # Синий (Неизвестное)
 NC='\033[0m'        # Сброс цвета
 
 # Параметры для Docker-контейнеров
-NECESSARY_CONTAINERS=("elixir" "ipfs_node" "orchestrator" "shardeum-validator" "deploy-fluentbit-1" "infernet-node" "hello-world" "deploy-redis-1" "shardeum-dashboard" "updater" "mongodb" "docker-watchtower-1")
+NECESSARY_CONTAINERS=("elixir" "shardeum-validator" "infernet-node" "deploy-fluentbit-1" "deploy-redis-1" "hello-world" "docker-watchtower-1")
 
-# Массивы для контейнеров с раздельными именами и ссылками
-UNNECESSARY_CONTAINERS_NAMES=("subspace_docker-node-1" "allora-worker" "boolnetwork" "subspace_docker-farmer-1" "kroma-validator" "kroma-node" "kroma-geth" "run_nillion" "source-02" "source-03" "source-01" "bevm-node")
-UNNECESSARY_CONTAINERS_LINKS=("https://example.com/subspace_docker-node-1" "https://example.com/allora-worker" "https://example.com/boolnetwork" "https://example.com/subspace_docker-farmer-1" "https://example.com/kroma-validator" "https://example.com/kroma-node" "https://example.com/kroma-geth" "https://example.com/run_nillion" "https://example.com/source-02" "https://example.com/source-03" "https://example.com/source-01" "https://example.com/bevm-node")
+# Контейнеры для удаления
+UNNECESSARY_CONTAINERS_NAMES=("boolnetwork")
+UNNECESSARY_CONTAINERS_LINKS=("https://example.com/boolnetwork")
 
 # Массивы для файлов и папок
 NECESSARY_ITEMS=(
-  "3proxy-0.9.3" ".bashrc" ".docker" "foundry" "multipleforlinux" "pipe_backup" "snap" ".wget-hsts"
-  ".bash_history" ".cache" "elixir" "infernet-container-starter" "multiple-node" ".profile" ".ssh"
-  "0.9.3.tar.gz" ".bash_profile" ".cloud-locale-test.skip" ".foundry" ".local" "opt" "shardeum" ".svm"
+  "pipe_backup" ".sonaric" ".docker" ".inputrc" ".bash_profile" "vmbackup-prod" ".shardeum" "multiple-node"
+  ".allorad" ".bashrc" "elixir" "multipleforlinux" ".config" ".0gchain" "nexus_log.txt" ".local" "0g-chain"
+  "0g-storage-client" "0g-storage-node" ".nesa" "vmrestore-prod" "shardeum" "data" ".cargo" ".profile"
+  "cleanup.log" ".ansible" "update.txt" "3proxy-0.9.3" "vmalert-prod" "infernet-container-starter"
+  "cron_cleanup.sh" "opt" ".bash_history" ".cache" ".npm"
 )
 
-UNNECESSARY_ITEMS_NAMES=("0gchain_snapshot.lz4" "0gchain_snapshot.lz4.aria2" "rusk" "namada" "masa-oracle-go-testnet" "light_0gchain_snapshot.lz4" "BeraMachine" "gear" "bevm" "allora-worker-x-reputer" "nillion" "my-cryptopunks-squid" "storage_0gchain_snapshot.lz4" "fractal-node" ".bitcoin")
-UNNECESSARY_ITEMS_LINKS=("https://example.com/0gchain_snapshot.lz4" "https://example.com/0gchain_snapshot.lz4.aria2" "https://example.com/rusk" "https://example.com/namada" "https://example.com/masa-oracle-go-testnet" "https://example.com/light_0gchain_snapshot.lz4" "https://example.com/BeraMachine" "https://example.com/gear" "https://example.com/bevm" "https://example.com/allora-worker-x-reputer" "https://example.com/nillion" "https://example.com/my-cryptopunks-squid" "https://example.com/storage_0gchain_snapshot.lz4" "https://example.com/fractal-node" "https://example.com/.bitcoin")
+# Файлы для удаления
+UNNECESSARY_ITEMS_NAMES=(
+  ".avail" "my-double-proc-squid" "rusk" "massa_backup.tar.gz" "heminetwork" "masa-oracle-go-testnet" ".masa"
+  "lightning" "my-single-proc-squid" ".foundry" "massa_TEST.25.2_release_linux.tar.gz" "my-quad-proc-squid"
+  "gear" "bevm" ".lightning" "my-triple-proc-squid" "massa_backup.tar21.gz" "foundry" ".boolnetwork"
+  "infernet-container-starter"
+)
+UNNECESSARY_ITEMS_LINKS=(
+  "https://example.com/avail" "https://example.com/my-double-proc-squid" "https://example.com/rusk"
+  "https://example.com/massa_backup.tar.gz" "https://example.com/heminetwork" "https://example.com/masa-oracle-go-testnet"
+  "https://example.com/.masa" "https://example.com/lightning" "https://example.com/my-single-proc-squid"
+  "https://example.com/.foundry" "https://example.com/massa_TEST.25.2_release_linux.tar.gz"
+  "https://example.com/my-quad-proc-squid" "https://example.com/gear" "https://example.com/bevm"
+  "https://example.com/.lightning" "https://example.com/my-triple-proc-squid"
+  "https://example.com/massa_backup.tar21.gz" "https://example.com/foundry" "https://example.com/.boolnetwork"
+  "https://example.com/infernet-container-starter"
+)
 
 # Сбор всех контейнеров
 ALL_CONTAINERS=($(docker ps -a --format '{{.Names}}'))
