@@ -6,10 +6,10 @@ BLUE='\033[0;34m'   # Синий (Неизвестное)
 NC='\033[0m'        # Сброс цвета
 
 # Параметры для Docker-контейнеров
-NECESSARY_CONTAINERS=("elixir" "ipfs_node" "orchestrator" "shardeum-dashboard" "updater" "mongodb" "docker-watchtower-1")
+NECESSARY_CONTAINERS=("elixir" "ipfs_node" "orchestrator" "shardeum-validator" "deploy-fluentbit-1" "infernet-node" "hello-world"  "shardeum-dashboard" "updater" "mongodb" "docker-watchtower-1")
 
 # Массивы для контейнеров с раздельными именами и ссылками
-UNNECESSARY_CONTAINERS_NAMES=("subspace_docker-node-1" "shardeum-validator" "deploy-fluentbit-1" "infernet-node" "hello-world" "allora-worker" "boolnetwork" "subspace_docker-farmer-1" "kroma-validator" "kroma-node" "kroma-geth" "run_nillion" "source-02" "source-03" "source-01" "bevm-node")
+UNNECESSARY_CONTAINERS_NAMES=("subspace_docker-node-1" "allora-worker" "boolnetwork" "subspace_docker-farmer-1" "kroma-validator" "kroma-node" "kroma-geth" "run_nillion" "source-02" "source-03" "source-01" "bevm-node")
 UNNECESSARY_CONTAINERS_LINKS=("https://example.com/subspace_docker-node-1" "https://example.com/allora-worker" "https://example.com/boolnetwork" "https://example.com/subspace_docker-farmer-1" "https://example.com/kroma-validator" "https://example.com/kroma-node" "https://example.com/kroma-geth" "https://example.com/run_nillion" "https://example.com/source-02" "https://example.com/source-03" "https://example.com/source-01" "https://example.com/bevm-node")
 
 # Массивы для файлов и папок
