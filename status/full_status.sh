@@ -10,8 +10,12 @@ NECESSARY_CONTAINERS=("elixir" "shardeum-validator" "infernet-node" "deploy-flue
 
 # Контейнеры для удаления с комментариями
 UNNECESSARY_CONTAINERS_NAMES=("boolnetwork")
-UNNECESSARY_CONTAINERS_LINKS=("https://example.com/boolnetwork")
-UNNECESSARY_CONTAINERS_COMMENTS=("Старый контейнер, не используется")
+UNNECESSARY_CONTAINERS_LINKS=(
+  "https://example.com/boolnetwork" #1
+  )
+UNNECESSARY_CONTAINERS_COMMENTS=(
+  "Старый контейнер, не используется" #1
+  )
 
 # Массивы для файлов и папок
 NECESSARY_ITEMS=(
@@ -24,42 +28,42 @@ NECESSARY_ITEMS=(
 
 # Файлы для удаления с комментариями
 UNNECESSARY_ITEMS_NAMES=(
-  ".avail" 
-  "my-double-proc-squid"
-  "rusk"
-  "massa_backup.tar.gz"
-  "heminetwork"
-  "masa-oracle-go-testnet"
-  ".masa"
-  "lightning"
-  "my-single-proc-squid"
-  "massa_TEST.25.2_release_linux.tar.gz"
-  "my-quad-proc-squid"
-  "gear"
-  "bevm"
-  ".lightning"
-  "my-triple-proc-squid"
-  "massa_backup.tar21.gz"
-  ".boolnetwork"
+  ".avail" #1
+  "my-double-proc-squid" #2
+  "rusk" #3
+  "massa_backup.tar.gz" #4
+  "heminetwork" #5
+  "masa-oracle-go-testnet" #6
+  ".masa" #7
+  "lightning" #8
+  "my-single-proc-squid" #9
+  "massa_TEST.25.2_release_linux.tar.gz" #10
+  "my-quad-proc-squid" #11
+  "gear" #12
+  "bevm" #13
+  ".lightning" #14
+  "my-triple-proc-squid" #15
+  "massa_backup.tar21.gz" #16
+  ".boolnetwork" #17
 )
 UNNECESSARY_ITEMS_COMMENTS=(
-  "Ненужный файл, создан в процессе тестов"
-  "Неиспользуемый squid контейнер"
-  "Старый файл rusk, можно удалить"
-  "Бэкап massa, больше не нужен"
-  "Файл из старого проекта heminetwork"
-  "Masa testnet, не нужен"
-  "Старые настройки masa"
-  "Файл lightning, можно удалить"
-  "Одинарный squid, не используется"
-  "Старый релиз massa, больше не нужен"
-  "Четырёхпроцессный squid, не используется"
-  "Старый файл gear, можно удалить"
-  "BEVM больше не нужен"
-  "Файл lightning, копия"
-  "Тройной squid, не используется"
-  "Старый архив massa, больше не нужен"
-  "Файл boolnetwork, не используется"
+  "Ненужный файл, создан в процессе тестов" #1
+  "Неиспользуемый squid контейнер" #2
+  "Старый файл rusk, можно удалить" #3
+  "Бэкап massa, больше не нужен" #4
+  "Файл из старого проекта heminetwork" #5
+  "Masa testnet, не нужен" #6
+  "Старые настройки masa" #7
+  "Файл lightning, можно удалить" #8
+  "Одинарный squid, не используется" #9
+  "Старый релиз massa, больше не нужен" #10
+  "Четырёхпроцессный squid, не используется" #11
+  "Старый файл gear, можно удалить" #12
+  "BEVM больше не нужен" #13
+  "Файл lightning, копия" #14
+  "Тройной squid, не используется" #15
+  "Старый архив massa, больше не нужен" #16
+  "Файл boolnetwork, не используется" #17
 )
 
 # Сбор всех контейнеров
