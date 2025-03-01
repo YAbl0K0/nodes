@@ -32,35 +32,34 @@ def get_dill_balance(address):
         return 0.0
 
 def send_dill(private_key, sender, recipient):
-    """Отправляет весь доступный DILL (вычитая только газ)"""
-    eth_balance = Decimal(get_dill_balance(sender)).quantize(Decimal("0.000000"))
+    """Отправляет весь доступный DILL (вычитая газ, не оставляя остаток)"""
+    eth_balance_wei = w3.eth.get_balance(sender)  # Баланс в wei
 
-    print(f"💰 Баланс {sender}: {eth_balance} DILL")
+    print(f"💰 Баланс {sender}: {w3.from_wei(eth_balance_wei, 'ether')} DILL")
 
-    if eth_balance <= 0:
+    if eth_balance_wei <= 0:
         print(f"⚠️ Пропускаем {sender}: баланс 0 DILL")
         return  # Баланс 0, пропускаем
 
-    gas_price = Decimal(get_gas_price())
+    gas_price = w3.eth.gas_price  # Цена газа в wei
+    estimated_gas = DEFAULT_GAS_LIMIT  # Стандартный лимит газа
 
-    # Оцениваем реальный лимит газа
-    estimated_gas = Decimal(DEFAULT_GAS_LIMIT)
-    required_eth = Decimal(w3.from_wei(estimated_gas * gas_price, 'ether')).quantize(Decimal("0.000000"))
+    required_eth_wei = estimated_gas * gas_price  # Стоимость газа в wei
 
-    print(f"🛠 Требуется {required_eth} DILL на газ | Баланс {eth_balance} DILL")
+    print(f"🛠 Требуется {w3.from_wei(required_eth_wei, 'ether')} DILL на газ | Баланс {w3.from_wei(eth_balance_wei, 'ether')} DILL")
 
-    if eth_balance <= required_eth:
+    if eth_balance_wei <= required_eth_wei:
         print(f"❌ Недостаточно DILL для газа, пропускаем {sender}")
         return  # Недостаточно DILL для газа, пропускаем
 
     # Вычисляем сумму для отправки (точно: баланс - газ)
-    send_amount_wei = w3.to_wei(float(eth_balance - required_eth), 'ether')
+    send_amount_wei = max(eth_balance_wei - required_eth_wei, 0)  
 
     if send_amount_wei <= 0:
         print(f"⚠️ После учета газа нечего отправлять. Пропускаем {sender}")
         return  # Нечего отправлять после вычета газа
 
-    send_amount = Decimal(w3.from_wei(send_amount_wei, 'ether')).quantize(Decimal("0.000000"))
+    send_amount = w3.from_wei(send_amount_wei, 'ether')
 
     print(f"📤 Отправляем {send_amount} DILL → {recipient}")
 
@@ -69,7 +68,7 @@ def send_dill(private_key, sender, recipient):
     try:
         tx = {
             'to': recipient,
-            'value': int(send_amount_wei),  # Теперь `wei` гарантированно валидный
+            'value': int(send_amount_wei),
             'gas': int(estimated_gas),
             'gasPrice': int(gas_price),
             'nonce': nonce,
