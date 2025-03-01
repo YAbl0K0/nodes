@@ -18,15 +18,14 @@ NECESSARY_ITEMS=(
   ".allorad" ".bashrc" "elixir" "multipleforlinux" ".config" ".0gchain" "nexus_log.txt" ".local" "0g-chain"
   "0g-storage-client" "0g-storage-node" ".nesa" "vmrestore-prod" "shardeum" "data" ".cargo" ".profile"
   "cleanup.log" ".ansible" "update.txt" "3proxy-0.9.3" "vmalert-prod" "infernet-container-starter"
-  "cron_cleanup.sh" "opt" ".bash_history" ".cache" ".npm"
+  "cron_cleanup.sh" "opt" ".bash_history" ".cache" ".npm" ".foundry" "foundry"
 )
 
 # Файлы для удаления
 UNNECESSARY_ITEMS_NAMES=(
   ".avail" "my-double-proc-squid" "rusk" "massa_backup.tar.gz" "heminetwork" "masa-oracle-go-testnet" ".masa"
-  "lightning" "my-single-proc-squid" ".foundry" "massa_TEST.25.2_release_linux.tar.gz" "my-quad-proc-squid"
-  "gear" "bevm" ".lightning" "my-triple-proc-squid" "massa_backup.tar21.gz" "foundry" ".boolnetwork"
-  "infernet-container-starter"
+  "lightning" "my-single-proc-squid" "massa_TEST.25.2_release_linux.tar.gz" "my-quad-proc-squid"
+  "gear" "bevm" ".lightning" "my-triple-proc-squid" "massa_backup.tar21.gz" ".boolnetwork"
 )
 
 # Сбор всех контейнеров
@@ -68,9 +67,8 @@ echo -e "\n===== ${RED}Файлы и папки (Удалить)${NC} ====="
 for item in "${ITEMS[@]}"; do
   for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
     name="${UNNECESSARY_ITEMS_NAMES[$i]}"
-    link="${UNNECESSARY_ITEMS_LINKS[$i]}"
     if [[ "$item" == "$name" ]]; then
-      echo -e "${RED}✖ $name ($link) ()${NC}"
+      echo -e "${RED}✖ $name ()${NC}"
     fi
   done
 done
