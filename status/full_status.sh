@@ -28,16 +28,6 @@ UNNECESSARY_ITEMS_NAMES=(
   "gear" "bevm" ".lightning" "my-triple-proc-squid" "massa_backup.tar21.gz" "foundry" ".boolnetwork"
   "infernet-container-starter"
 )
-UNNECESSARY_ITEMS_LINKS=(
-  "https://example.com/avail" "https://example.com/my-double-proc-squid" "https://example.com/rusk"
-  "https://example.com/massa_backup.tar.gz" "https://example.com/heminetwork" "https://example.com/masa-oracle-go-testnet"
-  "https://example.com/.masa" "https://example.com/lightning" "https://example.com/my-single-proc-squid"
-  "https://example.com/.foundry" "https://example.com/massa_TEST.25.2_release_linux.tar.gz"
-  "https://example.com/my-quad-proc-squid" "https://example.com/gear" "https://example.com/bevm"
-  "https://example.com/.lightning" "https://example.com/my-triple-proc-squid"
-  "https://example.com/massa_backup.tar21.gz" "https://example.com/foundry" "https://example.com/.boolnetwork"
-  "https://example.com/infernet-container-starter"
-)
 
 # Сбор всех контейнеров
 ALL_CONTAINERS=($(docker ps -a --format '{{.Names}}'))
@@ -45,45 +35,58 @@ ALL_CONTAINERS=($(docker ps -a --format '{{.Names}}'))
 # Сбор файлов и папок в текущей директории
 ITEMS=($(find . -mindepth 1 -maxdepth 1 -exec basename {} \;))
 
-# Отладочный вывод
-echo -e "\nВсе контейнеры:"
-for container in "${ALL_CONTAINERS[@]}"; do
-  echo " - $container"
+# Проверка отсутствующих контейнеров
+echo -e "\n===== ${BLUE}Отсутствующие контейнеры${NC} ====="
+for name in "${NECESSARY_CONTAINERS[@]}"; do
+  if [[ ! " ${ALL_CONTAINERS[*]} " =~ " $name " ]]; then
+    echo -e "${BLUE}➖ $name${NC}"
+  fi
 done
 
-echo -e "\nВсе файлы и папки:"
+# Проверка отсутствующих файлов и папок
+echo -e "\n===== ${BLUE}Отсутствующие файлы и папки${NC} ====="
+for name in "${NECESSARY_ITEMS[@]}"; do
+  if [[ ! " ${ITEMS[*]} " =~ " $name " ]]; then
+    echo -e "${BLUE}➖ $name${NC}"
+  fi
+done
+
+# Функция анализа Docker-контейнеров (только удаление)
+echo -e "\n===== ${RED}Docker-контейнеры (Удалить)${NC} ====="
+for i in "${!UNNECESSARY_CONTAINERS_NAMES[@]}"; do
+  name="${UNNECESSARY_CONTAINERS_NAMES[$i]}"
+  link="${UNNECESSARY_CONTAINERS_LINKS[$i]}"
+  for container in "${ALL_CONTAINERS[@]}"; do
+    if [[ "$container" == "$name" ]]; then
+      echo -e "${RED}✖ $name ($link) ()${NC}"
+    fi
+  done
+done
+
+# Функция анализа файлов и папок (только удаление)
+echo -e "\n===== ${RED}Файлы и папки (Удалить)${NC} ====="
 for item in "${ITEMS[@]}"; do
-  echo " - $item"
+  for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
+    name="${UNNECESSARY_ITEMS_NAMES[$i]}"
+    link="${UNNECESSARY_ITEMS_LINKS[$i]}"
+    if [[ "$item" == "$name" ]]; then
+      echo -e "${RED}✖ $name ($link) ()${NC}"
+    fi
+  done
 done
 
-# Функция анализа Docker-контейнеров
-analyze_containers() {
-  echo -e "\n===== ${RED}Docker-контейнеры (Удалить)${NC} ====="
-  for i in "${!UNNECESSARY_CONTAINERS_NAMES[@]}"; do
-    name="${UNNECESSARY_CONTAINERS_NAMES[$i]}"
-    link="${UNNECESSARY_CONTAINERS_LINKS[$i]}"
-    for container in "${ALL_CONTAINERS[@]}"; do
-      if [[ "$container" == "$name" ]] && [[ ! " ${NECESSARY_CONTAINERS[*]} " =~ " $name " ]]; then
-        echo -e "${RED}✖ $name ($link) ()${NC}"
-      fi
-    done
-  done
-}
+# Поиск неизвестных контейнеров
+echo -e "\n===== ${BLUE}Неизвестные контейнеры${NC} ====="
+for container in "${ALL_CONTAINERS[@]}"; do
+  if [[ ! " ${NECESSARY_CONTAINERS[*]} " =~ " $container " ]] && [[ ! " ${UNNECESSARY_CONTAINERS_NAMES[*]} " =~ " $container " ]]; then
+    echo -e "${BLUE}❓ $container${NC}"
+  fi
+done
 
-# Функция анализа файлов и папок
-analyze_items() {
-  echo -e "\n===== ${RED}Файлы и папки (Удалить)${NC} ====="
-  for item in "${ITEMS[@]}"; do
-    for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
-      name="${UNNECESSARY_ITEMS_NAMES[$i]}"
-      link="${UNNECESSARY_ITEMS_LINKS[$i]}"
-      if [[ "$item" == "$name" ]]; then
-        echo -e "${RED}✖ $name ($link) ()${NC}"
-      fi
-    done
-  done
-}
-
-# Вывод заголовков и анализ
-analyze_containers
-analyze_items
+# Поиск неизвестных файлов и папок
+echo -e "\n===== ${BLUE}Неизвестные файлы и папки${NC} ====="
+for item in "${ITEMS[@]}"; do
+  if [[ ! " ${NECESSARY_ITEMS[*]} " =~ " $item " ]] && [[ ! " ${UNNECESSARY_ITEMS_NAMES[*]} " =~ " $item " ]]; then
+    echo -e "${BLUE}❓ $item${NC}"
+  fi
+done
