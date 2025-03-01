@@ -18,10 +18,14 @@ UNNECESSARY_ITEMS_NAMES=("0gchain_snapshot.lz4" "0gchain_snapshot.lz4.aria2" "ru
 UNNECESSARY_ITEMS_LINKS=("https://example.com/0gchain_snapshot.lz4" "https://example.com/0gchain_snapshot.lz4.aria2" "https://example.com/rusk" "https://example.com/namada" "https://example.com/masa-oracle-go-testnet" "https://example.com/light_0gchain_snapshot.lz4" "https://example.com/BeraMachine" "https://example.com/gear" "https://example.com/bevm" "https://example.com/allora-worker-x-reputer" "https://example.com/nillion" "https://example.com/my-cryptopunks-squid" "https://example.com/storage_0gchain_snapshot.lz4" "https://example.com/fractal-node" "https://example.com/.bitcoin")
 
 # Сбор всех контейнеров
-ALL_CONTAINERS=$(docker ps -a --format '{{.Names}}')
+ALL_CONTAINERS=($(docker ps -a --format '{{.Names}}'))
 
 # Сбор файлов и папок в текущей директории
 ITEMS=($(find . -mindepth 1 -maxdepth 1 -printf "%f\n"))
+
+# Отладочный вывод
+echo -e "\nВсе контейнеры: ${ALL_CONTAINERS[*]}"
+echo -e "\nВсе файлы и папки: ${ITEMS[*]}"
 
 # Функция анализа Docker-контейнеров
 analyze_containers() {
@@ -29,9 +33,11 @@ analyze_containers() {
   for i in "${!UNNECESSARY_CONTAINERS_NAMES[@]}"; do
     name="${UNNECESSARY_CONTAINERS_NAMES[$i]}"
     link="${UNNECESSARY_CONTAINERS_LINKS[$i]}"
-    if [[ " $ALL_CONTAINERS " =~ " $name " ]]; then
-      echo -e "${RED}✖ $name ($link) ()${NC}"
-    fi
+    for container in "${ALL_CONTAINERS[@]}"; do
+      if [[ "$container" == "$name" ]]; then
+        echo -e "${RED}✖ $name ($link) ()${NC}"
+      fi
+    done
   done
 }
 
@@ -41,9 +47,11 @@ analyze_items() {
   for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
     name="${UNNECESSARY_ITEMS_NAMES[$i]}"
     link="${UNNECESSARY_ITEMS_LINKS[$i]}"
-    if [[ " ${ITEMS[*]} " =~ " $name " ]]; then
-      echo -e "${RED}✖ $name ($link) ()${NC}"
-    fi
+    for item in "${ITEMS[@]}"; do
+      if [[ "$item" == "$name" ]]; then
+        echo -e "${RED}✖ $name ($link) ()${NC}"
+      fi
+    done
   done
 }
 
