@@ -44,10 +44,10 @@ analyze_containers() {
 # Функция анализа файлов и папок
 analyze_items() {
   echo -e "\n===== ${RED}Файлы и папки (Удалить)${NC} ====="
-  for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
-    name="${UNNECESSARY_ITEMS_NAMES[$i]}"
-    link="${UNNECESSARY_ITEMS_LINKS[$i]}"
-    for item in "${ITEMS[@]}"; do
+  for item in "${ITEMS[@]}"; do
+    for i in "${!UNNECESSARY_ITEMS_NAMES[@]}"; do
+      name="${UNNECESSARY_ITEMS_NAMES[$i]}"
+      link="${UNNECESSARY_ITEMS_LINKS[$i]}"
       if [[ "$item" == "$name" ]]; then
         echo -e "${RED}✖ $name ($link) ()${NC}"
       fi
