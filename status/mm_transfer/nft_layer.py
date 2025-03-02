@@ -32,6 +32,6 @@ for address in addresses:
 
         print(f"\nАдрес: {address}")
         for name, has_nft in balances.items():
-            print(f"  {name}: {'Есть' if has_nft else 'Нет'}")
+            print(f"  {name}: {'✅Есть' if has_nft else '❌Нет'}")
     else:
         print(f"Ошибка: Неверный адрес в файле - {address}")
