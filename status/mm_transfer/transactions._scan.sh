@@ -43,7 +43,7 @@ get_wallet_balance() {
     
     balance=$(echo "$response" | jq -r '.result')
     if [[ "$balance" =~ ^[0-9]+$ ]]; then
-        balance=$(bc <<< "scale=6; $balance / 1000000000000000000") # Конвертация в ETH/BSC
+        balance=$(printf "%.6f" "$(bc <<< "scale=6; $balance / 1000000000000000000")") # Конвертация в ETH/BSC
     else
         balance="Ошибка"
     fi
