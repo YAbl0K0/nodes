@@ -35,4 +35,3 @@ for address in addresses:
             print(f"  {name}: {balance} NFT" if balance > 0 else f"  {name}: ❌ Нет NFT")
     else:
         print(f"Ошибка: Неверный адрес в файле - {address}")
-
