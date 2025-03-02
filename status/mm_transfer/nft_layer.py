@@ -1,7 +1,7 @@
 from web3 import Web3
 
 # Настройки
-RPC_URL = "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"  # Замените на актуальный RPC
+RPC_URL = "https://base-mainnet.g.alchemy.com/v2/ygAB_MYqQVqYgvOdxyQVefjDW3ApX3-B"  # Замените на актуальный RPC
 CONTRACT_ADDRESSES = {
     "OG Pledge Pass": "0xb06C68C8f9DE60107eAbda0D7567743967113360",
     "Standard Pledge Pass": "0xb06C68C8f9DE60107eAbda0D7567743967113360"
