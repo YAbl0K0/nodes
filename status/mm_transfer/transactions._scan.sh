@@ -32,17 +32,41 @@ get_last_transaction_date() {
     fi
 }
 
+# Функция получения баланса кошелька
+get_wallet_balance() {
+    local api_url=$1
+    local api_key=$2
+    local wallet=$3
+    
+    response=$(curl -s "$api_url?module=account&action=balance&address=$wallet&apikey=$api_key")
+    
+    balance=$(echo "$response" | jq -r '.result')
+    if [[ "$balance" =~ ^[0-9]+$ ]]; then
+        balance=$(bc <<< "scale=6; $balance / 1000000000000000000") # Конвертация в ETH/BSC
+    else
+        balance="Ошибка"
+    fi
+    echo "$balance"
+}
+
 # Заголовок таблицы
-echo "Адрес; BSC; MNT; opBNB; Arbitrum"
+echo "Адрес; BSC (Дата); BSC (Баланс); MNT (Дата); MNT (Баланс); opBNB (Дата); opBNB (Баланс); Arbitrum (Дата); Arbitrum (Баланс)"
 
 # Чтение кошельков из файла и запрос данных
 while read -r WALLET_ADDRESS; do
     if [[ -n "$WALLET_ADDRESS" ]]; then
         BSC_DATE=$(get_last_transaction_date "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS")
+        BSC_BALANCE=$(get_wallet_balance "https://api.bscscan.com/api" "$BSC_API_KEY" "$WALLET_ADDRESS")
+        
         MNT_DATE=$(get_last_transaction_date "https://api.mantlescan.xyz/api" "$MNT_API_KEY" "$WALLET_ADDRESS")
+        MNT_BALANCE=$(get_wallet_balance "https://api.mantlescan.xyz/api" "$MNT_API_KEY" "$WALLET_ADDRESS")
+        
         OPBNB_DATE=$(get_last_transaction_date "https://api-opbnb.bscscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS")
+        OPBNB_BALANCE=$(get_wallet_balance "https://api-opbnb.bscscan.com/api" "$OPBNB_API_KEY" "$WALLET_ADDRESS")
+        
         ARB_DATE=$(get_last_transaction_date "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS")
-
-        echo "$WALLET_ADDRESS; $BSC_DATE; $MNT_DATE; $OPBNB_DATE; $ARB_DATE"
+        ARB_BALANCE=$(get_wallet_balance "https://api.arbiscan.io/api" "$ARB_API_KEY" "$WALLET_ADDRESS")
+        
+        echo "$WALLET_ADDRESS; $BSC_DATE; $BSC_BALANCE; $MNT_DATE; $MNT_BALANCE; $OPBNB_DATE; $OPBNB_BALANCE; $ARB_DATE; $ARB_BALANCE"
     fi
 done < "$WALLETS_FILE"
