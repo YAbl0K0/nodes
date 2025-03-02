@@ -1,7 +1,7 @@
 from web3 import Web3
 
 # Настройки
-RPC_URL = "https://base-mainnet.g.alchemy.com/v2/ygAB_MYqQVqYgvOdxyQVefjDW3ApX3-B"  # Замените на актуальный RPC
+RPC_URL = "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"  # Замените на актуальный RPC
 CONTRACT_ADDRESSES = {
     "OG Pledge Pass": "0xb06C68C8f9DE60107eAbda0D7567743967113360",
     "Standard Pledge Pass": "0xb06C68C8f9DE60107eAbda0D7567743967113360"
@@ -28,10 +28,10 @@ with open("wallet.txt", "r") as file:
 for address in addresses:
     if web3.is_address(address):
         address = Web3.to_checksum_address(address)
-        balances = {name: contract.functions.balanceOf(address).call() for name, contract in contracts.items()}
+        balances = {name: contract.functions.balanceOf(address).call() > 0 for name, contract in contracts.items()}
 
         print(f"\nАдрес: {address}")
-        for name, balance in balances.items():
-            print(f"  {name}: {balance} NFT" if balance > 0 else f"  {name}: ❌ Нет NFT")
+        for name, has_nft in balances.items():
+            print(f"  {name}: {'Есть' if has_nft else 'Нет'}")
     else:
         print(f"Ошибка: Неверный адрес в файле - {address}")
