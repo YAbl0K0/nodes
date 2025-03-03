@@ -10,11 +10,11 @@ fi
 WALLETS_FILE="wallet.txt"
 
 # API-ключи
-BSC_API_KEY="HFMB6Z9IGCGG1CGAHING89K89JJU5FAD2S"
-ARB_API_KEY="UIUVBSRNQYYRQTMR4W6IGE3HI7VX7JEUIN"
-MNT_API_KEY="Y5U5T5IERB24ZBSMCXR35CM8YMJQ8DK91H"
-OPBNB_API_KEY="KMCZ4MTSVURVUPMZNQ9A8CAUMN2PB4BK2C"
-BASE_API_KEY="1VPXAR3DZS7TU957HW9W2S14NXCJ1N6WV8"
+export BSC_API_KEY="HFMB6Z9IGCGG1CGAHING89K89JJU5FAD2S"
+export ARB_API_KEY="UIUVBSRNQYYRQTMR4W6IGE3HI7VX7JEUIN"
+export MNT_API_KEY="Y5U5T5IERB24ZBSMCXR35CM8YMJQ8DK91H"
+export OPBNB_API_KEY="KMCZ4MTSVURVUPMZNQ9A8CAUMN2PB4BK2C"
+export BASE_API_KEY="1VPXAR3DZS7TU957HW9W2S14NXCJ1N6WV8"
 
 # Проверка наличия файла
 if [[ ! -f "$WALLETS_FILE" ]]; then
@@ -24,7 +24,9 @@ fi
 
 # Файл логов
 LOG_FILE="api_errors.log"
-> "$LOG_FILE" # Очистить логи перед запуском
+PARALLEL_LOG="parallel_errors.log"
+> "$LOG_FILE"  # Очистить лог ошибок API
+> "$PARALLEL_LOG"  # Очистить лог ошибок parallel
 
 # Функция получения последней транзакции
 get_last_transaction_date() {
@@ -34,22 +36,18 @@ get_last_transaction_date() {
 
     response=$(curl -s "$api_url?module=account&action=txlist&address=$wallet&startblock=0&endblock=99999999&sort=desc&apikey=$api_key")
 
-    # Проверяем, является ли JSON валидным
     if ! echo "$response" | jq empty 2>/dev/null; then
         echo "[$wallet] Ошибка API (некорректный JSON): $response" >> "$LOG_FILE"
         echo "Ошибка API"
         return
     fi
 
-    # Проверяем, содержит ли JSON поле "result"
     if [[ "$(echo "$response" | jq -r 'has("result")')" == "true" ]]; then
         result=$(echo "$response" | jq '.result')
-        
-        # Проверка, является ли "result" массивом и содержит ли он элементы
+
         if [[ "$(echo "$result" | jq 'if type=="array" then length else 0 end')" -gt 0 ]]; then
             timestamp=$(echo "$result" | jq -r '.[0].timeStamp')
 
-            # Проверка, является ли timestamp числом
             if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
                 date=$(date -d @"$timestamp" "+%Y-%m-%d" 2>/dev/null)
                 if [[ -z "$date" ]]; then
@@ -76,17 +74,15 @@ get_wallet_balance() {
     local api_url=$1
     local api_key=$2
     local wallet=$3
-    
+
     response=$(curl -s "$api_url?module=account&action=balance&address=$wallet&apikey=$api_key")
 
-    # Проверяем, является ли JSON валидным
     if ! echo "$response" | jq empty 2>/dev/null; then
         echo "[$wallet] Ошибка API (некорректный JSON): $response" >> "$LOG_FILE"
         echo "Ошибка API"
         return
     fi
 
-    # Проверяем, содержит ли JSON поле "result"
     if [[ "$(echo "$response" | jq -r 'has("result")')" == "true" ]]; then
         balance=$(echo "$response" | jq -r '.result')
 
@@ -127,9 +123,8 @@ check_wallet() {
 # Заголовок таблицы
 echo "Адрес; BSC (Дата); BSC (Баланс); MNT (Дата); MNT (Баланс); opBNB (Дата); opBNB (Баланс); Arbitrum (Дата); Arbitrum (Баланс); Base (Дата); Base (Баланс)"
 
-# Экспортируем функции и переменные для GNU Parallel
+# Экспорт функций для parallel
 export -f get_last_transaction_date get_wallet_balance check_wallet
-export BSC_API_KEY ARB_API_KEY MNT_API_KEY OPBNB_API_KEY BASE_API_KEY
 
-# Запуск в параллель (10 потоков)
-cat "$WALLETS_FILE" | parallel -j 10 check_wallet
+# Запуск в параллель (10 потоков) через bash
+cat "$WALLETS_FILE" | parallel --will-cite -j 10 bash -c 'check_wallet "$@"' _ 2>>"$PARALLEL_LOG"
