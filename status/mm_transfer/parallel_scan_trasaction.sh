@@ -9,7 +9,7 @@ fi
 # Файл со списком кошельков
 WALLETS_FILE="wallet.txt"
 
-# API-ключи
+# API-ключи (экспортируем для parallel)
 export BSC_API_KEY="HFMB6Z9IGCGG1CGAHING89K89JJU5FAD2S"
 export ARB_API_KEY="UIUVBSRNQYYRQTMR4W6IGE3HI7VX7JEUIN"
 export MNT_API_KEY="Y5U5T5IERB24ZBSMCXR35CM8YMJQ8DK91H"
@@ -25,8 +25,8 @@ fi
 # Файл логов
 LOG_FILE="api_errors.log"
 PARALLEL_LOG="parallel_errors.log"
-> "$LOG_FILE"  # Очистить лог ошибок API
-> "$PARALLEL_LOG"  # Очистить лог ошибок parallel
+> "$LOG_FILE"
+> "$PARALLEL_LOG"
 
 # Функция получения последней транзакции
 get_last_transaction_date() {
@@ -117,7 +117,9 @@ check_wallet() {
     BASE_DATE=$(get_last_transaction_date "https://api.basescan.org/api" "$BASE_API_KEY" "$WALLET_ADDRESS")
     BASE_BALANCE=$(get_wallet_balance "https://api.basescan.org/api" "$BASE_API_KEY" "$WALLET_ADDRESS")
 
-    echo "$WALLET_ADDRESS; $BSC_DATE; $BSC_BALANCE; $MNT_DATE; $MNT_BALANCE; $OPBNB_DATE; $OPBNB_BALANCE; $ARB_DATE; $ARB_BALANCE; $BASE_DATE; $BASE_BALANCE"
+    printf "%s; %s; %s; %s; %s; %s; %s; %s; %s; %s; %s\n" \
+        "$WALLET_ADDRESS" "$BSC_DATE" "$BSC_BALANCE" "$MNT_DATE" "$MNT_BALANCE" \
+        "$OPBNB_DATE" "$OPBNB_BALANCE" "$ARB_DATE" "$ARB_BALANCE" "$BASE_DATE" "$BASE_BALANCE"
 }
 
 # Заголовок таблицы
@@ -126,5 +128,6 @@ echo "Адрес; BSC (Дата); BSC (Баланс); MNT (Дата); MNT (Ба�
 # Экспорт функций для parallel
 export -f get_last_transaction_date get_wallet_balance check_wallet
 
-# Запуск в параллель (10 потоков) через bash
-cat "$WALLETS_FILE" | parallel --will-cite -j 10 bash -c 'check_wallet "$@"' _ 2>>"$PARALLEL_LOG"
+# Запуск в параллель (10 потоков) с явным указанием bash
+cat "$WALLETS_FILE" | parallel --env BSC_API_KEY --env ARB_API_KEY --env MNT_API_KEY \
+    --env OPBNB_API_KEY --env BASE_API_KEY --will-cite -j 5 bash -c 'check_wallet "$@"' _
