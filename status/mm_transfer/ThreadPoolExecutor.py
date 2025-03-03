@@ -38,7 +38,7 @@ def check_nft_balance(address):
 
 
 # Запускаем многопоточность
-MAX_THREADS = 10  # Настройте число потоков (чем больше, тем быстрее, но учитывайте лимиты RPC)
+MAX_THREADS = 20  # Настройте число потоков (чем больше, тем быстрее, но учитывайте лимиты RPC)
 print("[Адрес;OG Pledge Pass;Standard Pledge Pass]")
 
 with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
