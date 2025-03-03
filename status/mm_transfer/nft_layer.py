@@ -24,14 +24,17 @@ contracts = {name: web3.eth.contract(address=Web3.to_checksum_address(addr), abi
 with open("wallet.txt", "r") as file:
     addresses = [line.strip() for line in file if line.strip()]
 
+# Вывод заголовка
+print("[Адрес;OG Pledge Pass;Standard Pledge Pass]")
+
 # Проверка наличия NFT
 for address in addresses:
     if web3.is_address(address):
         address = Web3.to_checksum_address(address)
-        balances = {name: contract.functions.balanceOf(address).call() > 0 for name, contract in contracts.items()}
-
-        print(f"\nАдрес: {address}")
-        for name, has_nft in balances.items():
-            print(f"  {name}: {'✅Есть' if has_nft else '❌Нет'}")
+        balances = {name: int(contract.functions.balanceOf(address).call() > 0) for name, contract in contracts.items()}
+        
+        # Формируем строку вывода
+        output = f"{address};{balances['OG Pledge Pass']};{balances['Standard Pledge Pass']}"
+        print(output)
     else:
         print(f"Ошибка: Неверный адрес в файле - {address}")
