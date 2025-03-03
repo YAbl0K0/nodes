@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Проверка и установка GNU Parallel
+if ! command -v parallel &>/dev/null; then
+    echo "Установка GNU Parallel..."
+    sudo apt update && sudo apt install -y parallel
+fi
+
 # Файл со списком кошельков
 WALLETS_FILE="wallet.txt"
 
