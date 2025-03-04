@@ -53,12 +53,15 @@ get_wallet_balance() {
 
     response=$(curl -s "$api_url?module=account&action=balance&address=$wallet&apikey=$api_key")
 
-    if [[ -z "$response" || "$(echo "$response" | jq -r '.status')" == "0" || "$(echo "$response" | jq -r '.result')" == "null" ]]; then
+    # Проверяем, является ли результат JSON-объектом и статус API
+    if [[ -z "$response" || "$(echo "$response" | jq -r '.status')" == "0" ]]; then
         echo "Ошибка API"
         return
     fi
 
     balance=$(echo "$response" | jq -r '.result')
+
+    # Теперь корректно проверяем баланс, включая ноль
     if [[ "$balance" =~ ^[0-9]+$ ]]; then
         balance=$(printf "%.6f" "$(bc <<< "scale=6; $balance / 1000000000000000000")")
         echo "$balance"
@@ -66,6 +69,7 @@ get_wallet_balance() {
         echo "Ошибка"
     fi
 }
+
 
 # Функция проверки кошелька
 check_wallet() {
