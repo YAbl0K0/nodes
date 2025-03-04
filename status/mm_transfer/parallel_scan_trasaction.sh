@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Файл со списком кошельков (один кошелек на строке)
+# Файл со списком кошельков
 WALLETS_FILE="wallet.txt"
 
 # API-ключи
@@ -16,7 +16,7 @@ if [[ ! -f "$WALLETS_FILE" ]]; then
     exit 1
 fi
 
-# Функция получения последней транзакции (только дата)
+# Функция получения последней транзакции (дата)
 get_last_transaction_date() {
     local api_url=$1
     local api_key=$2
@@ -24,16 +24,28 @@ get_last_transaction_date() {
 
     response=$(curl -s "$api_url?module=account&action=txlist&address=$wallet&startblock=0&endblock=99999999&sort=desc&apikey=$api_key")
 
-    if [[ $(echo "$response" | jq '.result | length') -gt 0 ]]; then
+    # Проверяем, является ли `result` массивом
+    if [[ "$(echo "$response" | jq -r '.result')" == "null" ]]; then
+        echo "Ошибка API"
+        return
+    fi
+
+    # Проверяем, есть ли транзакции
+    tx_count=$(echo "$response" | jq '.result | length')
+    if [[ "$tx_count" -gt 0 ]]; then
         timestamp=$(echo "$response" | jq -r '.result[0].timeStamp')
-        date=$(date -d @"$timestamp" "+%Y-%m-%d") # Убираем время, оставляем только дату
-        echo "$date"
+        if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
+            date=$(date -d @"$timestamp" "+%Y-%m-%d")
+            echo "$date"
+        else
+            echo "Ошибка даты"
+        fi
     else
         echo "Нет транзакций"
     fi
 }
 
-# Функция получения баланса кошелька
+# Функция получения баланса
 get_wallet_balance() {
     local api_url=$1
     local api_key=$2
@@ -41,16 +53,17 @@ get_wallet_balance() {
 
     response=$(curl -s "$api_url?module=account&action=balance&address=$wallet&apikey=$api_key")
 
+    # Проверяем, является ли `result` числом
     balance=$(echo "$response" | jq -r '.result')
     if [[ "$balance" =~ ^[0-9]+$ ]]; then
-        balance=$(printf "%.6f" "$(bc <<< "scale=6; $balance / 1000000000000000000")") # Конвертация в ETH/BSC
+        balance=$(printf "%.6f" "$(bc <<< "scale=6; $balance / 1000000000000000000")")
+        echo "$balance"
     else
-        balance="Ошибка"
+        echo "Ошибка"
     fi
-    echo "$balance"
 }
 
-# Функция проверки одного кошелька
+# Функция проверки кошелька
 check_wallet() {
     local WALLET_ADDRESS=$1
 
@@ -74,8 +87,8 @@ check_wallet() {
 
 export -f check_wallet get_last_transaction_date get_wallet_balance
 
-# Заголовок таблицы
+# Заголовок
 echo "Адрес; BSC (Дата); BSC (Баланс); MNT (Дата); MNT (Баланс); opBNB (Дата); opBNB (Баланс); Arbitrum (Дата); Arbitrum (Баланс); Base (Дата); Base (Баланс)"
 
-# Запускаем обработку в 20 потоков
+# Запуск в 20 потоков
 cat "$WALLETS_FILE" | parallel -j 20 check_wallet
