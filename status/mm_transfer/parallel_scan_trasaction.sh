@@ -24,16 +24,18 @@ get_last_transaction_date() {
 
     response=$(curl -s "$api_url?module=account&action=txlist&address=$wallet&startblock=0&endblock=99999999&sort=desc&apikey=$api_key")
 
-    if [[ "$(echo "$response" | jq -r '.result')" == "null" ]]; then
+    # Проверяем, является ли результат валидным JSON
+    if [[ -z "$response" || "$(echo "$response" | jq -r '.status')" == "0" || "$(echo "$response" | jq -r '.result')" == "null" ]]; then
         echo "Ошибка API"
         return
     fi
 
+    # Проверяем, есть ли транзакции
     tx_count=$(echo "$response" | jq '.result | length')
     if [[ "$tx_count" -gt 0 ]]; then
         timestamp=$(echo "$response" | jq -r '.result[0].timeStamp')
         if [[ "$timestamp" =~ ^[0-9]+$ ]]; then
-            date=$(date -d @"$timestamp" "+%Y-%m-%d")
+            date=$(date -d @"$timestamp" "+%Y-%m-%d" 2>/dev/null || echo "Ошибка даты")
             echo "$date"
         else
             echo "Ошибка даты"
@@ -50,6 +52,12 @@ get_wallet_balance() {
     local wallet=$3
 
     response=$(curl -s "$api_url?module=account&action=balance&address=$wallet&apikey=$api_key")
+
+    # Проверяем, является ли результат валидным JSON
+    if [[ -z "$response" || "$(echo "$response" | jq -r '.status')" == "0" || "$(echo "$response" | jq -r '.result')" == "null" ]]; then
+        echo "Ошибка API"
+        return
+    fi
 
     balance=$(echo "$response" | jq -r '.result')
     if [[ "$balance" =~ ^[0-9]+$ ]]; then
