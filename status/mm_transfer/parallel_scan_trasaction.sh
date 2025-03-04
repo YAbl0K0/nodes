@@ -98,7 +98,7 @@ check_wallet() {
 echo "Адрес; BSC (Дата); BSC (Баланс); MNT (Дата); MNT (Баланс); opBNB (Дата); opBNB (Баланс); Arbitrum (Дата); Arbitrum (Баланс); Base (Дата); Base (Баланс)"
 
 # Запуск проверки в 20 потоков
-MAX_JOBS=5
+MAX_JOBS=2
 job_count=0
 
 while read -r WALLET_ADDRESS; do
