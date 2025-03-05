@@ -39,23 +39,23 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
     sleep 10  # Очікування перед наступною транзакцією
     
     # Генерація та підпис транзакції для REDEEM
-    node -e "const ethers = require('ethers');
-    const provider = new ethers.JsonRpcProvider('$RPC_URL');
-    const wallet = new ethers.Wallet('$PRIVATE_KEY', provider);
-    const contractAddress = '$CONTRACT_ADDRESS';
-    const contractABI = ['function withdraw(uint256,uint256) external'];
+    node -e 'const ethers = require("ethers");
+    const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
+    const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
+    const contractAddress = "'$CONTRACT_ADDRESS'";
+    const contractABI = ["function withdraw(uint256,uint256) external"];
     const contract = new ethers.Contract(contractAddress, contractABI, wallet);
-    const amount = ethers.parseUnits('1', 18); // Сума для виводу
+    const amount = ethers.parseUnits("1", 18); // Сума для виводу
     const duration = 604800; // 7 днів у секундах
     async function redeem() {
         try {
             const tx = await contract.withdraw(amount, duration);
-            console.log('Redeem TX:', tx.hash);
+            console.log("Redeem TX:", tx.hash);
         } catch (error) {
-            console.error('Помилка у транзакції:', error);
+            console.error("Помилка у транзакції:", error);
         }
     }
-    redeem();"
+    redeem();'
     
     sleep 10  # Очікування перед наступним гаманцем
   
