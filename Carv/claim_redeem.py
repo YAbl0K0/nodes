@@ -10,8 +10,7 @@ web3 = Web3(Web3.HTTPProvider(RPC_URL))
 # Данные контракта
 MULTICALL_ADDRESS = "0xac9650d8"
 CLAIM_FUNCTION_SIG = web3.keccak(text="claim()")[:4].hex()
-REDEEM_FUNCTION_SIG = web3.keccak(text="redeem(address,uint256)")[:4].hex()
-
+REDEEM_FUNCTION_SIG = web3.keccak(text="withdraw(uint256,uint256)")[:4].hex()
 # Файл с аккаунтами
 ACCOUNTS_FILE = "accounts.json"
 REDEEM_TARGET = "0x2b790Dea1f6c5d72D5C60aF0F9CD6834374a964B"
