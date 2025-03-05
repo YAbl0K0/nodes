@@ -23,18 +23,36 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
     echo "Обробка гаманця: $ADDRESS"
     
     # Генерація та підпис транзакції для CLAIM
-    node -e "const ethers = require('ethers');
-    const provider = new ethers.JsonRpcProvider('$RPC_URL');
-    const wallet = new ethers.Wallet('$PRIVATE_KEY', provider);
-    async function claim() {
-        const tx = await wallet.sendTransaction({
-            to: '$CONTRACT_ADDRESS',
-            data: '0xce9650d8',
-            gasLimit: 1000000
-        });
-        console.log('Claim TX:', tx.hash);
+    node -e 'const ethers = require("ethers");
+const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
+const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
+const contractAddress = "'$CONTRACT_ADDRESS'";
+
+// ABI контракту
+const contractABI = [
+    "function multicall(bytes[] calldata data) external",
+    "function claimRewards() external"
+];
+
+const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+
+async function claim() {
+    try {
+        // Кодуємо виклик функції claimRewards
+        const claimData = contract.interface.encodeFunctionData("claimRewards", []);
+
+        // Викликаємо multicall із даними
+        const tx = await contract.multicall([claimData]);
+        console.log("Claim TX:", tx.hash);
+        await tx.wait();
+        console.log("✅ Claim підтверджено!");
+    } catch (error) {
+        console.error("❌ Помилка Claim:", error);
     }
-    claim();"
+}
+
+claim();'
+
     
     sleep 10  # Очікування перед наступною транзакцією
     
