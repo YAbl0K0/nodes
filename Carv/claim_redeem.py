@@ -4,7 +4,7 @@ import schedule
 from web3 import Web3
 
 # Подключение к RPC сети Arbitrum One
-RPC_URL = "https://arb1.arbitrum.io/rpc"  # Замени на свой надежный RPC
+RPC_URL = "https://worldchain-mainnet.g.alchemy.com/v2/uxH9ix8Ifu27RJO332Yii9nqVqGqUTRa"  # Замени на свой надежный RPC
 web3 = Web3(Web3.HTTPProvider(RPC_URL))
 
 # Данные контракта
