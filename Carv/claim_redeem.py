@@ -4,11 +4,14 @@ import schedule
 from web3 import Web3
 
 # Подключение к RPC сети Arbitrum One
-RPC_URL = "https://arb1.arbitrum.io/rpc"  # Замени на свой надежный RPC
+RPC_URL = "https://worldchain-mainnet.g.alchemy.com/v2/uxH9ix8Ifu27RJO332Yii9nqVqGqUTRa"  # Замени на свой надежный RPC
 web3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-# Контракт multicall
+# Контракт multicall для клейма
 MULTICALL_ADDRESS = "0x911F8bB66aD57b8c6C80D5D3FC7eB15a9c634"  # Уточни адрес
+
+# Контракт для вывода токенов (нужно найти его)
+WITHDRAW_CONTRACT_ADDRESS = "0x2b790Dea1f6c5d72D5C60aF0F9CD6834374a964B"  # Адрес контракта вывода (найди в Arbiscan)
 
 # Файл с аккаунтами
 ACCOUNTS_FILE = "accounts.json"
@@ -16,7 +19,7 @@ ACCOUNTS_FILE = "accounts.json"
 # Функция клейма
 CLAIM_FUNCTION_SIG = web3.keccak(text="claim()")[:4].hex()
 
-# Функция вывода (замена redeem)
+# Функция вывода (redeem заменен на withdraw)
 WITHDRAW_FUNCTION_SIG = web3.keccak(text="withdraw(uint256,uint256)")[:4].hex()
 
 # Загружаем аккаунты
@@ -60,8 +63,8 @@ def claim_tokens(private_key):
     return tx_hash
 
 # Функция получения баланса
-def get_balance(wallet_address):
-    token_contract = web3.eth.contract(address=MULTICALL_ADDRESS, abi=[{
+def get_balance(wallet_address, contract_address):
+    token_contract = web3.eth.contract(address=contract_address, abi=[{
         "constant": True,
         "inputs": [{"name": "_owner", "type": "address"}],
         "name": "balanceOf",
@@ -71,16 +74,16 @@ def get_balance(wallet_address):
 
     return token_contract.functions.balanceOf(wallet_address).call()
 
-# Вывод токенов (redeem -> withdraw)
+# Вывод токенов напрямую (withdraw вместо redeem)
 def withdraw_tokens(private_key, wallet_address):
     print(f"⏳ Проверка баланса перед выводом для {wallet_address}...")
-    balance = get_balance(wallet_address)
+    balance = get_balance(wallet_address, WITHDRAW_CONTRACT_ADDRESS)
 
     if balance > 0:
         duration = 0  # Укажи корректное значение
         withdraw_data = WITHDRAW_FUNCTION_SIG + web3.to_hex(balance)[2:].zfill(64) + web3.to_hex(duration)[2:].zfill(64)
         
-        tx_hash = send_transaction(private_key, MULTICALL_ADDRESS, withdraw_data)
+        tx_hash = send_transaction(private_key, WITHDRAW_CONTRACT_ADDRESS, withdraw_data)
         print(f"✅ Токены успешно выведены! Tx: {tx_hash}")
         return tx_hash
     else:
@@ -95,7 +98,7 @@ def process_accounts():
         wallet_address = acc["wallet_address"]
 
         # Проверяем баланс перед клеймом
-        initial_balance = get_balance(wallet_address)
+        initial_balance = get_balance(wallet_address, WITHDRAW_CONTRACT_ADDRESS)
         print(f"💰 Баланс до клейма: {initial_balance}")
 
         # Клейм токенов
@@ -103,10 +106,10 @@ def process_accounts():
         time.sleep(10)
 
         # Проверяем баланс после клейма
-        new_balance = get_balance(wallet_address)
+        new_balance = get_balance(wallet_address, WITHDRAW_CONTRACT_ADDRESS)
         print(f"💰 Баланс после клейма: {new_balance}")
 
-        # Вывод токенов
+        # Вывод токенов (withdraw)
         withdraw_tx = withdraw_tokens(private_key, wallet_address)
 
         # Логирование
