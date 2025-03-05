@@ -43,7 +43,7 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
     const provider = new ethers.JsonRpcProvider('$RPC_URL');
     const wallet = new ethers.Wallet('$PRIVATE_KEY', provider);
     const contractAddress = '$CONTRACT_ADDRESS';
-    const contractABI = ["function withdraw(uint256 amount, uint256 duration) external"];
+    const contractABI = ['function withdraw(uint256 amount, uint256 duration) external'];
     const contract = new ethers.Contract(contractAddress, contractABI, wallet);
     const amount = ethers.parseUnits('1', 18); // Сума для виводу
     const duration = 604800; // 7 днів у секундах
@@ -55,7 +55,7 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
             console.error('Помилка у транзакції:', error);
         }
     }
-    redeem();"
+redeem();"
     
     sleep 10  # Очікування перед наступним гаманцем
   
