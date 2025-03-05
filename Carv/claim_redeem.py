@@ -46,23 +46,24 @@ def get_safe_nonce(address):
 # Функция отправки транзакции
 def send_transaction(private_key, to, data, value=0):
     account = web3.eth.account.from_key(private_key)
-    nonce = get_safe_nonce(account.address)
+    nonce = web3.eth.get_transaction_count(account.address, "pending")
 
     tx = {
-        "to": to,
+        "to": Web3.to_checksum_address(to),  # Приведение адреса в правильный формат
         "value": value,
         "gas": 300000,
         "gasPrice": web3.to_wei("5", "gwei"),
         "nonce": nonce,
-        "data": data,
+        "data": Web3.to_bytes(hexstr=data),  # Исправление формата данных
         "chainId": web3.eth.chain_id
     }
 
     signed_tx = web3.eth.account.sign_transaction(tx, private_key)
     tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    
+
     print(f"⏳ Транзакция отправлена: {web3.to_hex(tx_hash)}")
     return web3.to_hex(tx_hash)
+
 
 # Проверка завершения транзакции
 def wait_for_transaction(tx_hash, timeout=60):
