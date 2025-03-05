@@ -171,10 +171,5 @@ def process_accounts():
         with open("transactions.log", "a") as log:
             log.write(f"{wallet_address} | Claim: {claim_tx} | Withdraw: {withdraw_tx}\n")
 
-# Запуск скрипта каждый день в 09:00
-schedule.every().day.at("09:00").do(process_accounts)
-
-print("⏳ Скрипт запущен, ждет 09:00...")
-while True:
-    schedule.run_pending()
-    time.sleep(30)
+# Запускаем процесс
+process_accounts()
