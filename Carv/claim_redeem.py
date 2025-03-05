@@ -18,6 +18,22 @@ ACCOUNTS_FILE = "accounts.json"
 CLAIM_FUNCTION_SIG = web3.keccak(text="claim()")[:4].hex()
 WITHDRAW_FUNCTION_SIG = web3.keccak(text="withdraw(uint256,uint256)")[:4].hex()
 
+# Выбор режима вывода токенов
+print("Выберите режим redeem:")
+print("1 - Вывести все токены")
+print("2 - Вывести только 10 токенов")
+choice = input("Введите 1 или 2: ").strip()
+
+if choice == "1":
+    redeem_all = True
+    print("✅ Будет выполнен вывод всех токенов.")
+elif choice == "2":
+    redeem_all = False
+    print("✅ Будет выполнен вывод только 10 токенов.")
+else:
+    print("❌ Неверный выбор, выход из программы.")
+    exit()
+
 # Загрузка аккаунтов
 def load_accounts():
     with open(ACCOUNTS_FILE, "r") as file:
@@ -100,18 +116,23 @@ def claim_tokens(private_key):
     tx_hash = send_transaction(private_key, MULTICALL_ADDRESS, multicall_data)
     return tx_hash
 
-# Вывод токенов (withdraw вместо redeem)
+# Вывод токенов (redeem)
 def withdraw_tokens(private_key, wallet_address):
     print(f"⏳ Проверка баланса перед выводом для {wallet_address}...")
     
     balance = get_balance(wallet_address, WITHDRAW_CONTRACT_ADDRESS)
     if balance > 0:
+        if redeem_all:
+            amount = balance  # Вывод всех токенов
+        else:
+            amount = min(10 * (10**18), balance)  # Вывод 10 токенов (учитываем 18 знаков)
+
         duration = 0  # Проверь, если контракт требует другое значение
 
         # Формируем правильные данные для `withdraw(uint256,uint256)`
-        balance_hex = web3.to_hex(balance)[2:].zfill(64)
+        amount_hex = web3.to_hex(amount)[2:].zfill(64)
         duration_hex = web3.to_hex(duration)[2:].zfill(64)
-        withdraw_data = WITHDRAW_FUNCTION_SIG + balance_hex + duration_hex
+        withdraw_data = WITHDRAW_FUNCTION_SIG + amount_hex + duration_hex
         
         tx_hash = send_transaction(private_key, WITHDRAW_CONTRACT_ADDRESS, withdraw_data)
         return tx_hash
@@ -141,7 +162,7 @@ def process_accounts():
         new_balance = wait_for_balance_update(wallet_address, WITHDRAW_CONTRACT_ADDRESS, initial_balance)
         print(f"💰 Баланс после клейма: {new_balance}")
 
-        # Вывод токенов (withdraw)
+        # Вывод токенов (redeem)
         if new_balance > initial_balance:
             withdraw_tx = withdraw_tokens(private_key, wallet_address)
             wait_for_transaction(withdraw_tx)
