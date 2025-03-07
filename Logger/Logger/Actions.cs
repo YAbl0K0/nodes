@@ -15,7 +15,7 @@
         }
         public static Result Error()
         {
-            Logger.Instance.Log(LogType.Error, $"Warning");
+            Logger.Instance.Log(LogType.Error, $"Error");
 
             return new Result { Status = false, Massage = "Err" };
         }
