@@ -26,29 +26,31 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
 node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-const contractAddress = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"; // Новий контракт
+const contractAddress = "0x40377e5ba6..."; // Той контракт, що був у попередніх викликах
 
 const contractABI = [
-    "function claimRewards() external"
+    "function multicall(bytes[] calldata data) external",
+    "function <РОЗШИФРОВАНА_ФУНКЦІЯ>(address) external"
 ];
 
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
-async function claim() {
+async function executeMulticall() {
     try {
-        const tx = await contract.claimRewards({ gasLimit: 500000 });
-        console.log("Claim TX:", tx.hash);
+        const functionData = contract.interface.encodeFunctionData("<РОЗШИФРОВАНА_ФУНКЦІЯ>", ["0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0"]);
+        const tx = await contract.multicall([functionData], { gasLimit: 600000 });
+        console.log("Multicall TX:", tx.hash);
         await tx.wait();
-        console.log("✅ Claim підтверджено!");
+        console.log("✅ Multicall виконано успішно!");
     } catch (error) {
         if (error.data) {
             console.error("🛑 Raw Revert Data:", error.data);
         }
-        console.error("❌ Помилка Claim:", error);
+        console.error("❌ Помилка Multicall:", error);
     }
 }
 
-claim();'
+executeMulticall();'
 
 
     sleep 10  # Очікування перед наступною транзакцією
