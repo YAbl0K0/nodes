@@ -23,37 +23,44 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
     echo "Обробка гаманця: $ADDRESS"
     
     # Генерація та підпис транзакції для CLAIM
-    # Встав це замість попередньої CLAIM-функції
 node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
 const contractAddress = "'$CONTRACT_ADDRESS'";
 
-// ABI контракту з функцією перевірки нагород
+// ABI контракту
 const contractABI = [
     "function multicall(bytes[] calldata data) external",
     "function claimRewards() external",
-    "function pendingRewards(address account) view returns (uint256)"
+    "function pendingRewards(address account) view returns (uint256)",
+    "function owner() view returns (address)"
 ];
 
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function claim() {
     try {
-        // Перевіряємо, чи є доступні нагороди
-        const pendingRewards = await contract.pendingRewards(wallet.address);
-        if (pendingRewards.isZero()) {
+        // Перевірка власника (якщо є такі обмеження)
+        const owner = await contract.owner();
+        if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
+            console.log("⚠️ Цей гаманець не є власником контракту.");
+            return;
+        }
+
+        // Перевірка наявності нагород
+        const pending = await contract.pendingRewards(wallet.address);
+        console.log("Pending Rewards:", pending.toString());
+        if (pending.isZero()) {
             console.log("⚠️ Немає доступних нагород для CLAIM.");
             return;
         }
 
-        // Попередньо перевіряємо через callStatic
+        // Симуляція транзакції
         await contract.callStatic.claimRewards();
+        console.log("✅ Симуляція CLAIM успішна.");
 
-        // Кодуємо виклик функції claimRewards
+        // Виконання multicall
         const claimData = contract.interface.encodeFunctionData("claimRewards", []);
-
-        // Викликаємо multicall із даними
         const tx = await contract.multicall([claimData], { gasLimit: 500000 });
         console.log("Claim TX:", tx.hash);
         await tx.wait();
