@@ -56,32 +56,32 @@ executeMulticall();'
     sleep 10  # Очікування перед наступною транзакцією
     
     # Генерація та підпис транзакції для REDEEM
-    node -e 'const ethers = require("ethers");
-const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
-const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-const contractAddress = "'$CONTRACT_ADDRESS'";
-const contractABI = ["function withdraw(uint256 amount, uint256 duration) external"];
-const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+    #node -e 'const ethers = require("ethers");
+#const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
+#const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
+#const contractAddress = "'$CONTRACT_ADDRESS'";
+#const contractABI = ["function withdraw(uint256 amount, uint256 duration) external"];
+#const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
-async function redeem() {
-    try {
-        const amount = ethers.parseUnits("1", 18); // Мінімум 1 veCARV
-        const duration = 1296000; // 15 днів у секундах
+#async function redeem() {
+    #try {
+        #const amount = ethers.parseUnits("1", 18); // Мінімум 1 veCARV
+        #const duration = 1296000; // 15 днів у секундах
 
-        console.log("Виконуємо withdraw:", { amount: amount.toString(), duration });
+        #console.log("Виконуємо withdraw:", { amount: amount.toString(), duration });
 
-        const tx = await contract.withdraw(amount, duration);
-        console.log("Withdraw TX:", tx.hash);
-        await tx.wait();
-        console.log("✅ Withdraw підтверджено!");
-    } catch (error) {
-        console.error("❌ Помилка у транзакції:", error);
-    }
-}
+        #const tx = await contract.withdraw(amount, duration);
+        #console.log("Withdraw TX:", tx.hash);
+       # await tx.wait();
+     #   console.log("✅ Withdraw підтверджено!");
+ #   } catch (error) {
+#     console.error("❌ Помилка у транзакції:", error);
+#    }
+#}
 
-redeem();'
+#redeem();'
     
-    sleep 10  # Очікування перед наступним гаманцем
+   # sleep 10  # Очікування перед наступним гаманцем
   
 done < "$WALLETS_FILE"
 
