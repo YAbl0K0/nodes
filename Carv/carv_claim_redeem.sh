@@ -26,46 +26,20 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
 node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-const contractAddress = "'$CONTRACT_ADDRESS'";
+const contractAddress = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"; // Новий контракт
 
-// ABI контракту
 const contractABI = [
-    "function multicall(bytes[] calldata data) external",
-    "function claimRewards() external",
-    "function pendingRewards(address account) view returns (uint256)",
-    "function owner() view returns (address)"
+    "function claimRewards() external"
 ];
 
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function claim() {
     try {
-        // Перевірка власника (якщо є такі обмеження)
-        const owner = await contract.owner();
-        if (wallet.address.toLowerCase() !== owner.toLowerCase()) {
-            console.log("⚠️ Цей гаманець не є власником контракту.");
-            return;
-        }
-
-        // Перевірка наявності нагород
-        const pending = await contract.pendingRewards(wallet.address);
-        console.log("Pending Rewards:", pending.toString());
-        if (pending.isZero()) {
-            console.log("⚠️ Немає доступних нагород для CLAIM.");
-            return;
-        }
-
-        // Симуляція транзакції
-        await contract.callStatic.claimRewards();
-        console.log("✅ Симуляція CLAIM успішна.");
-
-        // Виконання multicall
-        const claimData = contract.interface.encodeFunctionData("claimRewards", []);
-        const tx = await contract.multicall([claimData], { gasLimit: 500000 });
+        const tx = await contract.claimRewards({ gasLimit: 500000 });
         console.log("Claim TX:", tx.hash);
         await tx.wait();
         console.log("✅ Claim підтверджено!");
-
     } catch (error) {
         if (error.data) {
             console.error("🛑 Raw Revert Data:", error.data);
