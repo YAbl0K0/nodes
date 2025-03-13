@@ -26,22 +26,32 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
 node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-const contractAddress = "0x40377e5ba6..."; // Той контракт, що був у попередніх викликах
+const contractAddress = "0xa91fF8b606bA57D8c6638Dd8CF3fC7eB15a9c634"; // Контракт NodeClaim
 
 const contractABI = [
     "function multicall(bytes[] calldata data) external",
-    "function <РОЗШИФРОВАНА_ФУНКЦІЯ>(address) external"
+    "function NodeClaim(address node, address claimer, uint256 rewards) external"
 ];
 
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function executeMulticall() {
     try {
-        const functionData = contract.interface.encodeFunctionData("<РОЗШИФРОВАНА_ФУНКЦІЯ>", ["0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0"]);
-        const tx = await contract.multicall([functionData], { gasLimit: 600000 });
+        // Підставляємо дані для виклику NodeClaim
+        const nodeAddress = "0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0";
+        const claimerAddress = "0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0";
+        const rewards = ethers.parseUnits("690.810218900826266814", 18);
+
+        const claimData = contract.interface.encodeFunctionData("NodeClaim", [nodeAddress, claimerAddress, rewards]);
+
+        // Виконуємо multicall
+        const tx = await contract.multicall([claimData], { gasLimit: 800000 });
         console.log("Multicall TX:", tx.hash);
+
+        // Чекаємо підтвердження
         await tx.wait();
         console.log("✅ Multicall виконано успішно!");
+
     } catch (error) {
         if (error.data) {
             console.error("🛑 Raw Revert Data:", error.data);
