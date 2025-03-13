@@ -27,8 +27,8 @@ node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
 
-// Використовуємо правильну checksum-адресу
-const contractAddress = ethers.getAddress("0xa91fF8b606bA57D8c6638Dd8CF3fC7eB15a9c634");
+// Використовуємо формат checksum для адрес
+const contractAddress = ethers.getAddress("0xa91ff8b606ba57d8c6638dd8cf3fc7eb15a9c634"); // Виправлено на lowercase перед getAddress
 
 const contractABI = [
     "function multicall(bytes[] calldata data) external",
@@ -39,17 +39,15 @@ const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function executeMulticall() {
     try {
-        const nodeAddress = ethers.getAddress("0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0");
-        const claimerAddress = ethers.getAddress("0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0");
+        const nodeAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0"); // lowercase перед getAddress
+        const claimerAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0"); // lowercase перед getAddress
         const rewards = ethers.parseUnits("690.810218900826266814", 18);
 
         const claimData = contract.interface.encodeFunctionData("NodeClaim", [nodeAddress, claimerAddress, rewards]);
 
-        // Виконуємо multicall
         const tx = await contract.multicall([claimData], { gasLimit: 800000 });
         console.log("Multicall TX:", tx.hash);
 
-        // Чекаємо підтвердження
         await tx.wait();
         console.log("✅ Multicall виконано успішно!");
 
@@ -62,8 +60,6 @@ async function executeMulticall() {
 }
 
 executeMulticall();'
-
-
 
     sleep 10  # Очікування перед наступною транзакцією
     
