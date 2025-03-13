@@ -32,7 +32,6 @@ def multicall():
     contract.functions.multicall("0xf39a19bf0000000000000000000000005990c2a11af316987d2d99fe8b813d7c1f0ba0d0").call()
     time.sleep(0.3)
     
-if __name__ == "__main__":
     mulitcall()
 
 
