@@ -41,9 +41,6 @@ async function executeMulticall() {
         const nodeAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0");
         const rewards = ethers.parseUnits("690.810218900826266814", 18);
 
-        // Кодуємо дані для виклику nodeClaim
-        const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
-
         // Викликаємо multicall з мінімальними аргументами
         const tx = await contract.multicall([claimData], { gasLimit: 800000 });
         console.log("Multicall TX:", tx.hash);
