@@ -26,7 +26,9 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
 node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-const contractAddress = "0xa91fF8b606bA57D8c6638Dd8CF3fC7eB15a9c634"; // Контракт NodeClaim
+
+// Використовуємо правильну checksum-адресу
+const contractAddress = ethers.getAddress("0xa91fF8b606bA57D8c6638Dd8CF3fC7eB15a9c634");
 
 const contractABI = [
     "function multicall(bytes[] calldata data) external",
@@ -37,9 +39,8 @@ const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function executeMulticall() {
     try {
-        // Підставляємо дані для виклику NodeClaim
-        const nodeAddress = "0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0";
-        const claimerAddress = "0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0";
+        const nodeAddress = ethers.getAddress("0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0");
+        const claimerAddress = ethers.getAddress("0x5990c2a11aF316987d2d99FE8B813D7c1F0bA0D0");
         const rewards = ethers.parseUnits("690.810218900826266814", 18);
 
         const claimData = contract.interface.encodeFunctionData("NodeClaim", [nodeAddress, claimerAddress, rewards]);
@@ -61,6 +62,7 @@ async function executeMulticall() {
 }
 
 executeMulticall();'
+
 
 
     sleep 10  # Очікування перед наступною транзакцією
