@@ -27,24 +27,24 @@ node -e 'const ethers = require("ethers");
 const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
 const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
 
-// Використовуємо формат checksum для адрес
-const contractAddress = ethers.getAddress("0xa91ff8b606ba57d8c6638dd8cf3fc7eb15a9c634"); // Виправлено на lowercase перед getAddress
+const contractAddress = ethers.getAddress("0xa91ff8b606ba57d8c6638dd8cf3fc7eb15a9c634");
 
 const contractABI = [
     "function multicall(bytes[] calldata data) external",
-    "function NodeClaim(address node, address claimer, uint256 rewards) external"
+    "function nodeClaim(address node, uint256 rewards) external"
 ];
 
 const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
 async function executeMulticall() {
     try {
-        const nodeAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0"); // lowercase перед getAddress
-        const claimerAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0"); // lowercase перед getAddress
+        const nodeAddress = ethers.getAddress("0x5990c2a11af316987d2d99fe8b813d7c1f0ba0d0");
         const rewards = ethers.parseUnits("690.810218900826266814", 18);
 
-        const claimData = contract.interface.encodeFunctionData("NodeClaim", [nodeAddress, claimerAddress, rewards]);
+        // Кодуємо дані для виклику nodeClaim
+        const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
 
+        // Викликаємо multicall з мінімальними аргументами
         const tx = await contract.multicall([claimData], { gasLimit: 800000 });
         console.log("Multicall TX:", tx.hash);
 
