@@ -10,9 +10,18 @@ w3 = Web3(Web3.HTTPProvider("https://arbitrum-mainnet.infura.io/v3/93ff81a034684
 CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
 API_KEY = "RVVY832DVQGA39F4IVC82615YYYIGUB1S2"
 
-# Ваш приватный ключ
-PRIVATE_KEY = "ВАШ_ПРИВАТНЫЙ_КЛЮЧ"
-ACCOUNT = w3.eth.account.from_key(PRIVATE_KEY)  # ✅ Исправлено здесь
+# Ввод приватного ключа и его очистка
+PRIVATE_KEY = "ВАШ_ПРИВАТНЫЙ_КЛЮЧ".strip()
+
+# Проверка формата приватного ключа
+if not PRIVATE_KEY.startswith("0x"):
+    PRIVATE_KEY = "0x" + PRIVATE_KEY
+
+if len(PRIVATE_KEY) != 66:
+    raise ValueError("Приватный ключ имеет неверную длину. Убедитесь, что он состоит из 66 символов.")
+
+# Создание аккаунта
+ACCOUNT = w3.eth.account.from_key(PRIVATE_KEY)
 
 # Получение ABI контракта через API Arbscan
 def get_ABI(contract):
