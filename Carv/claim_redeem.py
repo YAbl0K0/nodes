@@ -11,7 +11,7 @@ CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
 API_KEY = "RVVY832DVQGA39F4IVC82615YYYIGUB1S2"
 
 # Ваш приватный ключ
-PRIVATE_KEY = "ВАШ_ПРИВАТНЫЙ_КЛЮЧ"
+PRIVATE_KEY = "2a0afc123b6d48e120be2ee443a25ff1649e4049d648e044c2937e576af0b0ae"
 ACCOUNT = w3.eth.account.privateKeyToAccount(PRIVATE_KEY)
 
 # Получение ABI контракта через API Arbscan
