@@ -24,93 +24,57 @@ do
 
     # Генерація та підпис транзакції для CLAIM
     node -e '
-const ethers = require("ethers");
-const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
-const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
+    const ethers = require("ethers");
+    const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
+    const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
 
-const contractAddress = "'$CONTRACT_ADDRESS'";
-const contractABI = [
-    "function multicall(bytes[] calldata data) external",
-    "function nodeClaim(address node, uint256 rewards) external",
-    "function tokenRewards(address node) view returns (uint256)"
-];
+    const contractAddress = "'$CONTRACT_ADDRESS'";
+    const contractABI = [
+        "function multicall(bytes[] calldata data) external",
+        "function nodeClaim(address node, uint256 rewards) external",
+        "function tokenRewards(address node) view returns (uint256)"
+    ];
 
-const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+    const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
-async function simulateMulticall() {
-    try {
-        const nodeAddress = "'$ADDRESS'";
-        const rewards = await contract.tokenRewards(nodeAddress);
-        
-        if (rewards === 0n) {
-            console.log(`❌ Немає доступних нагород для ${nodeAddress}`);
-            return;
-        }
+    async function executeMulticall() {
+        try {
+            const nodeAddress = "'$ADDRESS'";
+            
+            // Перевірка нагород
+            const rewards = await contract.tokenRewards(nodeAddress);
+            console.log(`Доступні нагороди для ${nodeAddress}:`, ethers.formatUnits(rewards, 18));
 
-        const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
+            if (rewards === 0n) {
+                console.log(`❌ Немає доступних нагород для ${nodeAddress}`);
+                return;
+            }
 
-        // Симуляція multicall
-        await contract.callStatic.multicall([claimData]);
-        console.log("✅ Симуляція успішна, транзакція не буде відхилена");
+            // Підготовка виклику nodeClaim
+            const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
 
-    } catch (error) {
-        console.error("❌ Симуляція показала, що транзакція буде відхилена:");
-        if (error.data) {
-            console.error("🛑 Raw Revert Data:", error.data);
-        } else {
-            console.error(error);
+            // Виклик multicall
+            const tx = await contract.multicall([claimData], { gasLimit: 800000 });
+            console.log("Multicall TX:", tx.hash);
+
+            await tx.wait();
+            console.log("✅ Multicall виконано успішно!");
+
+        } catch (error) {
+            if (error.data) {
+                console.error("🛑 Raw Revert Data:", error.data);
+            }
+            console.error("❌ Помилка Multicall:", error);
         }
     }
-}
 
-simulateMulticall();'
+    executeMulticall();'
 
 
     sleep 10  # Очікування перед наступною транзакцією
     
     # Генерація та підпис транзакції для REDEEM
-    node -e '
-const ethers = require("ethers");
-const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
-const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
-
-const contractAddress = "0x2b790Dea1f6c5d72D5C60aF0F9CD6834374a964B";
-
-const contractABI = [
-    "function withdraw(uint256 amount, uint256 duration) external",
-    "function balanceOf(address account) view returns (uint256)"
-];
-
-const contract = new ethers.Contract(contractAddress, contractABI, wallet);
-
-async function simulateWithdraw() {
-    try {
-        const balance = await contract.balanceOf(wallet.address);
-        console.log("Баланс перед withdraw:", ethers.formatUnits(balance, 18));
-
-        if (balance === 0n) {
-            console.log("❌ Баланс 0, немає що виводити");
-            return;
-        }
-
-        const amount = ethers.parseUnits("1", 18); // Виводимо 1 veCARV
-        const duration = 1296000; // 15 днів в секундах
-
-        // Симуляція withdraw
-        await contract.callStatic.withdraw(amount, duration);
-        console.log("✅ Симуляція withdraw успішна");
-
-    } catch (error) {
-        console.error("❌ Помилка симуляції withdraw:");
-        if (error.data) {
-            console.error("🛑 Raw Revert Data:", error.data);
-        } else {
-            console.error(error);
-        }
-    }
-}
-
-simulateWithdraw();'
+    
 
   
 done < "$WALLETS_FILE"
