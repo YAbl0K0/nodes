@@ -40,6 +40,7 @@ def multicall_for_wallet(wallet_address, private_key):
         "0xf39a19bf0000000000000000000000005990c2a11af316987d2d99fe8b813d7c1f0ba0d0"
     ]
 
+    # Получение nonce
     nonce = w3.eth.get_transaction_count(wallet_address)
     print(f"🔢 Nonce: {nonce}")
 
