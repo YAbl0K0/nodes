@@ -6,7 +6,7 @@ from web3 import Web3
 w3 = Web3(Web3.HTTPProvider("https://arbitrum-mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"))
 
 # Проверка подключения
-if not w3.isConnected():
+if not w3.is_connected():
     print("❌ Не удалось подключиться к RPC")
 else:
     print("✅ Подключение к RPC успешно")
@@ -25,7 +25,6 @@ manual_abi = [
         "stateMutability": "nonpayable",
         "type": "function"
     }
-    # Добавьте остальные определения функций из ABI реализационного контракта
 ]
 
 # Доступ к контракту с вручную заданным ABI
@@ -41,13 +40,13 @@ def multicall_for_wallet(wallet_address, private_key):
         "0xf39a19bf0000000000000000000000005990c2a11af316987d2d99fe8b813d7c1f0ba0d0"
     ]
 
-    nonce = w3.eth.getTransactionCount(wallet_address)
+    nonce = w3.eth.get_transaction_count(wallet_address)
     print(f"🔢 Nonce: {nonce}")
 
     txn = contract.functions.multicall(method_data).build_transaction({
         'from': wallet_address,
         'gas': 600000,
-        'gasPrice': w3.toWei('0.01041', 'gwei'),
+        'gasPrice': w3.to_wei('0.01041', 'gwei'),
         'nonce': nonce,
     })
 
