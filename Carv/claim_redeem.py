@@ -15,22 +15,7 @@ else:
 CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
 
 # ВСТАВЬТЕ СЮДА РУЧНОЙ ABI!
-manual_abi = [
-    {
-        "inputs": [
-            {
-                "internalType": "bytes[]",
-                "name": "data",
-                "type": "bytes[]"
-            }
-        ],
-        "name": "multicall",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-]
-
+manual_abi = [{"inputs":[{"internalType":"address","name":"_logic","type":"address"},{"internalType":"address","name":"initialOwner","type":"address"},{"internalType":"bytes","name":"_data","type":"bytes"}],"stateMutability":"payable","type":"constructor"},{"inputs":[{"internalType":"address","name":"target","type":"address"}],"name":"AddressEmptyCode","type":"error"},{"inputs":[{"internalType":"address","name":"admin","type":"address"}],"name":"ERC1967InvalidAdmin","type":"error"},{"inputs":[{"internalType":"address","name":"implementation","type":"address"}],"name":"ERC1967InvalidImplementation","type":"error"},{"inputs":[],"name":"ERC1967NonPayable","type":"error"},{"inputs":[],"name":"FailedInnerCall","type":"error"},{"inputs":[],"name":"ProxyDeniedAdminAccess","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"previousAdmin","type":"address"},{"indexed":false,"internalType":"address","name":"newAdmin","type":"address"}],"name":"AdminChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"implementation","type":"address"}],"name":"Upgraded","type":"event"},{"stateMutability":"payable","type":"fallback"}]
 # Доступ к контракту с вручную заданным ABI
 def access_Contract(contract):
     return w3.eth.contract(address=contract, abi=manual_abi)
