@@ -30,8 +30,7 @@ do
     const contractAddress = "'$CONTRACT_ADDRESS'";
     const contractABI = [
         "function multicall(bytes[] calldata data) external",
-        "function nodeClaim(address node, uint256 rewards) external",
-        "function tokenRewards(address node) view returns (uint256)"
+        "function nodeClaim(address node, uint256 rewards) external"
     ];
 
     const contract = new ethers.Contract(contractAddress, contractABI, wallet);
@@ -39,17 +38,9 @@ do
     async function executeMulticall() {
         try {
             const nodeAddress = "'$ADDRESS'";
-            
-            // Перевірка нагород
-            const rewards = await contract.callStatic.tokenRewards(nodeAddress);
-            console.log(`Доступні нагороди для ${nodeAddress}:`, ethers.formatUnits(rewards, 18));
+            const rewards = ethers.parseUnits("1", 18); // Мінімальна тестова сума
 
-            if (rewards === 0n) {
-                console.log(`❌ Немає доступних нагород для ${nodeAddress}`);
-                return;
-            }
-
-            // Кодування nodeClaim
+            // Кодування виклику nodeClaim
             const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
 
             // Виклик multicall з nodeClaim
