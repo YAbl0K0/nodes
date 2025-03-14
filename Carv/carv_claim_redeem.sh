@@ -24,43 +24,47 @@ do
 
     # Генерація та підпис транзакції для CLAIM
     node -e '
-    const ethers = require("ethers");
-    const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
-    const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
+const ethers = require("ethers");
+const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
+const wallet = new ethers.Wallet("'$PRIVATE_KEY'", provider);
 
-    const contractAddress = ethers.getAddress("0xa91ff8b606ba57d8c6638dd8cf3fc7eb15a9c634");
+const contractAddress = "'$CONTRACT_ADDRESS'";
+const contractABI = [
+    "function multicall(bytes[] calldata data) external",
+    "function nodeClaim(address node, uint256 rewards) external",
+    "function tokenRewards(address node) view returns (uint256)"
+];
 
-    const contractABI = [
-        "function multicall(bytes[] calldata data) external",
-        "function nodeClaim(address node, uint256 rewards) external"
-    ];
+const contract = new ethers.Contract(contractAddress, contractABI, wallet);
 
-    const contract = new ethers.Contract(contractAddress, contractABI, wallet);
+async function simulateMulticall() {
+    try {
+        const nodeAddress = "'$ADDRESS'";
+        const rewards = await contract.tokenRewards(nodeAddress);
+        
+        if (rewards === 0n) {
+            console.log(`❌ Немає доступних нагород для ${nodeAddress}`);
+            return;
+        }
 
-    async function executeMulticall() {
-        try {
-            const nodeAddress = ethers.getAddress("'$ADDRESS'");
-            const rewards = ethers.parseUnits("690.810218900826266814", 18);
+        const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
 
-            // Підготовка даних для nodeClaim
-            const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
+        // Симуляція multicall
+        await contract.callStatic.multicall([claimData]);
+        console.log("✅ Симуляція успішна, транзакція не буде відхилена");
 
-            // Викликаємо multicall
-            const tx = await contract.multicall([claimData], { gasLimit: 800000 });
-            console.log("Multicall TX:", tx.hash);
-
-            await tx.wait();
-            console.log("✅ Multicall виконано успішно!");
-
-        } catch (error) {
-            if (error.data) {
-                console.error("🛑 Raw Revert Data:", error.data);
-            }
-            console.error("❌ Помилка Multicall:", error);
+    } catch (error) {
+        console.error("❌ Симуляція показала, що транзакція буде відхилена:");
+        if (error.data) {
+            console.error("🛑 Raw Revert Data:", error.data);
+        } else {
+            console.error(error);
         }
     }
+}
 
-    executeMulticall();'
+simulateMulticall();'
+
 
     sleep 10  # Очікування перед наступною транзакцією
     
