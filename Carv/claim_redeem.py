@@ -3,7 +3,7 @@ import json
 from web3 import Web3
 
 # Подключение к RPC Arbitrum
-w3 = Web3(Web3.HTTPProvider("https://arbitrum-mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID"))
+w3 = Web3(Web3.HTTPProvider("https://arb-mainnet.g.alchemy.com/v2/CZp2sOzdTa1SZukXkVGpP0kpsyhJL5nL"))
 
 # Проверка подключения
 if not w3.is_connected():
