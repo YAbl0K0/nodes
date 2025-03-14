@@ -22,7 +22,6 @@ while IFS="," read -r ADDRESS PRIVATE_KEY
 do
     echo "Обробка гаманця: $ADDRESS"
 
-    # Генерація та підпис транзакції для CLAIM
     node -e '
     const ethers = require("ethers");
     const provider = new ethers.JsonRpcProvider("'$RPC_URL'");
@@ -42,7 +41,7 @@ do
             const nodeAddress = "'$ADDRESS'";
             
             // Перевірка нагород
-            const rewards = await contract.tokenRewards(nodeAddress);
+            const rewards = await contract.callStatic.tokenRewards(nodeAddress);
             console.log(`Доступні нагороди для ${nodeAddress}:`, ethers.formatUnits(rewards, 18));
 
             if (rewards === 0n) {
@@ -50,10 +49,10 @@ do
                 return;
             }
 
-            // Підготовка виклику nodeClaim
+            // Кодування nodeClaim
             const claimData = contract.interface.encodeFunctionData("nodeClaim", [nodeAddress, rewards]);
 
-            // Виклик multicall
+            // Виклик multicall з nodeClaim
             const tx = await contract.multicall([claimData], { gasLimit: 800000 });
             console.log("Multicall TX:", tx.hash);
 
@@ -70,13 +69,8 @@ do
 
     executeMulticall();'
 
-
     sleep 10  # Очікування перед наступною транзакцією
-    
-    # Генерація та підпис транзакції для REDEEM
-    
 
-  
 done < "$WALLETS_FILE"
 
 echo "Готово!"
