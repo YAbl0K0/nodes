@@ -1,6 +1,6 @@
+import csv
 import requests
 import json
-import time
 from web3 import Web3
 
 # Подключение к RPC Arbitrum
@@ -9,19 +9,6 @@ w3 = Web3(Web3.HTTPProvider("https://arbitrum-mainnet.infura.io/v3/93ff81a034684
 # Адрес контракта и API-ключ Arbscan
 CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
 API_KEY = "RVVY832DVQGA39F4IVC82615YYYIGUB1S2"
-
-# Ввод приватного ключа и его очистка
-PRIVATE_KEY = "ВАШ_ПРИВАТНЫЙ_КЛЮЧ".strip()
-
-# Проверка формата приватного ключа
-if not PRIVATE_KEY.startswith("0x"):
-    PRIVATE_KEY = "0x" + PRIVATE_KEY
-
-if len(PRIVATE_KEY) != 66:
-    raise ValueError("Приватный ключ имеет неверную длину. Убедитесь, что он состоит из 66 символов.")
-
-# Создание аккаунта
-ACCOUNT = w3.eth.account.from_key(PRIVATE_KEY)
 
 # Получение ABI контракта через API Arbscan
 def get_ABI(contract):
@@ -34,8 +21,8 @@ def access_Contract(contract):
     abi = get_ABI(contract)
     return w3.eth.contract(address=contract, abi=abi)
 
-# Выполнение multicall
-def multicall():
+# Выполнение multicall для одного кошелька
+def multicall_for_wallet(wallet_address, private_key):
     contract = access_Contract(CONTRACT)
     
     # Данные для вызова multicall
@@ -45,23 +32,42 @@ def multicall():
     
     # Построение транзакции
     txn = contract.functions.multicall(method_data).build_transaction({
-        'from': ACCOUNT.address,
+        'from': wallet_address,
         'gas': 600000,
         'gasPrice': w3.toWei('0.01041', 'gwei'),
-        'nonce': w3.eth.getTransactionCount(ACCOUNT.address),
+        'nonce': w3.eth.getTransactionCount(wallet_address),
     })
 
     # Подписание транзакции
-    signed_txn = w3.eth.account.sign_transaction(txn, PRIVATE_KEY)
-    
+    signed_txn = w3.eth.account.sign_transaction(txn, private_key)
+
     # Отправка транзакции
     tx_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    
-    print(f"Transaction sent. Hash: {tx_hash.hex()}")
-    
-    # Ожидание получения подтверждения (опционально)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print("Transaction receipt:", receipt)
+    print(f"Transaction sent for {wallet_address}. Hash: {tx_hash.hex()}")
 
-# Вызов функции
-multicall()
+    # Ожидание подтверждения (опционально)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    print(f"Transaction receipt for {wallet_address}: {receipt}")
+
+# Чтение данных из CSV и выполнение multicall для каждого кошелька
+def process_wallets():
+    with open('wallets.csv', 'r') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            address = row['address'].strip()
+            private_key = row['private_key'].strip()
+            
+            # Проверка формата приватного ключа
+            if not private_key.startswith("0x"):
+                private_key = "0x" + private_key
+            if len(private_key) != 66:
+                print(f"Неверный формат приватного ключа для {address}. Пропускаем.")
+                continue
+
+            try:
+                multicall_for_wallet(address, private_key)
+            except Exception as e:
+                print(f"Ошибка при обработке {address}: {e}")
+
+# Запуск обработки
+process_wallets()
