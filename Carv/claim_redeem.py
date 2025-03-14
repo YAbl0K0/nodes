@@ -43,11 +43,11 @@ def multicall_for_wallet(wallet_address, private_key):
 
     # Отправка транзакции
     tx_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
-    print(f"Transaction sent for {wallet_address}. Hash: {tx_hash.hex()}")
+    print(f"✅ Transaction sent for {wallet_address}. Hash: {tx_hash.hex()}")
 
     # Ожидание подтверждения (опционально)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-    print(f"Transaction receipt for {wallet_address}: {receipt}")
+    print(f"✅ Transaction receipt for {wallet_address}: {receipt}")
 
 # Чтение данных из CSV и выполнение multicall для каждого кошелька
 def process_wallets():
@@ -56,18 +56,20 @@ def process_wallets():
         for row in reader:
             address = row['address'].strip()
             private_key = row['private_key'].strip()
-            
-            # Проверка формата приватного ключа
+
+            # Добавляем 0x, если его нет
             if not private_key.startswith("0x"):
                 private_key = "0x" + private_key
+
+            # Проверка длины приватного ключа
             if len(private_key) != 66:
-                print(f"Неверный формат приватного ключа для {address}. Пропускаем.")
+                print(f"❌ Ошибка: Приватный ключ для {address} имеет неправильную длину ({len(private_key)}). Пропускаем.")
                 continue
 
             try:
                 multicall_for_wallet(address, private_key)
             except Exception as e:
-                print(f"Ошибка при обработке {address}: {e}")
+                print(f"❌ Ошибка при обработке {address}: {e}")
 
 # Запуск обработки
 process_wallets()
