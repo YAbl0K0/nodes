@@ -47,6 +47,7 @@ def prepare_multicall_data(method_id, wallet_address):
     function_data = first_part + formatted_address
     multicall_data = encode(['bytes'], [bytes.fromhex(function_data)])
 
+    print(type(multicall_data))
 # Виконання multicall для одного гаманця
 def multicall_for_wallet(wallet_address, private_key):
     contract = access_contract(CONTRACT)
@@ -63,7 +64,8 @@ def multicall_for_wallet(wallet_address, private_key):
         "gasPrice": w3.to_wei('10', 'gwei'),
         "chainId": 42161  # Arbitrum One
     })
-
+    
+    print(type(multicall_data))
     # Підпис транзакції
     signed_txn = w3.eth.account.sign_transaction(call_data, private_key)
     print(f"✅ Транзакція підписана для {wallet_address}")
