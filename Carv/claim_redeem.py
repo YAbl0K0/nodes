@@ -32,24 +32,33 @@ def access_Contract(contract):
     return w3.eth.contract(address=contract, abi=manual_abi)
 
 # Выполнение multicall для одного кошелька
-def multicall_for_wallet(wallet_address, private_key):
-    print(f"🚀 Обработка кошелька: {wallet_address}")
-    contract = access_Contract(CONTRACT)
+def format_wallet_address(address: str) -> str:
+    # Remove '0x' prefix
+    address = address[2:]
+    # Convert to lowercase
+    address = address.lower()
+    # Pad with leading zeros to ensure 96 characters length
+    address = address.ljust(96, '0')
+    return address
 
-    method_data = [
-        "0xf39a19bf0000000000000000000000005990c2a11af316987d2d99fe8b813d7c1f0ba0d0"
-    ]
+first_part = "f39a19bf000000000000000000000000"
+wallet_address = "0x0FED18aB6A2CbC49B0E55a46b2926FBDe453a848"
+formatted_address = format_wallet_address(wallet_address)
 
-    # Получение nonce
-    nonce = w3.eth.get_transaction_count(wallet_address)
-    print(f"🔢 Nonce: {nonce}")
+    # Concatenate both parts
+combined_string = first_part + formatted_address
 
-    txn = contract.functions.multicall(method_data).build_transaction({
-        'from': wallet_address,
-        'gas': 600000,
-        'gasPrice': w3.to_wei('0.01041', 'gwei'),
-        'nonce': nonce,
-    })
+    # Split into two 64-character strings
+part1 = combined_string[:64]
+part2 = combined_string[64:]
+array =["0000000000000000000000000000000000000000000000000000000000000020",
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "0000000000000000000000000000000000000000000000000000000000000020",
+        "0000000000000000000000000000000000000000000000000000000000000024",
+        part1,
+        part2]
+    
+print(array)
 
     signed_txn = w3.eth.account.sign_transaction(txn, private_key)
     print(f"✅ Транзакция подписана")
