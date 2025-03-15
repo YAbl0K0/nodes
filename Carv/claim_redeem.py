@@ -73,10 +73,6 @@ def process_wallets():
                 if not private_key.startswith("0x"):
                     private_key = "0x" + private_key
 
-                if len(private_key) != 66:
-                    print(f"❌ Ошибка: Приватный ключ для {address} имеет неправильную длину ({len(private_key)}). Пропускаем.")
-                    continue
-
                 try:
                     multicall_for_wallet(address, private_key)
                 except Exception as e:
