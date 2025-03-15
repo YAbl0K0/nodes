@@ -41,24 +41,24 @@ def format_wallet_address(address: str) -> str:
     address = address.ljust(96, '0')
     return address
 
-first_part = "f39a19bf000000000000000000000000"
-wallet_address = "0x0FED18aB6A2CbC49B0E55a46b2926FBDe453a848"
-formatted_address = format_wallet_address(wallet_address)
+    first_part = "f39a19bf000000000000000000000000"
+    wallet_address = "0x0FED18aB6A2CbC49B0E55a46b2926FBDe453a848"
+    formatted_address = format_wallet_address(wallet_address)
 
     # Concatenate both parts
-combined_string = first_part + formatted_address
+    combined_string = first_part + formatted_address
 
     # Split into two 64-character strings
-part1 = combined_string[:64]
-part2 = combined_string[64:]
-array =["0000000000000000000000000000000000000000000000000000000000000020",
-        "0000000000000000000000000000000000000000000000000000000000000001",
-        "0000000000000000000000000000000000000000000000000000000000000020",
-        "0000000000000000000000000000000000000000000000000000000000000024",
-        part1,
-        part2]
+    part1 = combined_string[:64]
+    part2 = combined_string[64:]
+    array =["0000000000000000000000000000000000000000000000000000000000000020",
+            "0000000000000000000000000000000000000000000000000000000000000001",
+            "0000000000000000000000000000000000000000000000000000000000000020",
+            "0000000000000000000000000000000000000000000000000000000000000024",
+            part1,
+            part2]
     
-print(array)
+    print(array)
 
     signed_txn = w3.eth.account.sign_transaction(txn, private_key)
     print(f"✅ Транзакция подписана")
