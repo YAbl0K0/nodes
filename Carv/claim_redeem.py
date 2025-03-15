@@ -64,22 +64,18 @@ def multicall_for_wallet(wallet_address, private_key):
     # Підготовка даних
     method_id = "f39a19bf"
     multicall_data = prepare_multicall_data(method_id, wallet_address)
-    
-    # Кодування даних
-    call_data = contract.encodeABI(fn_name="multicall", args=[multicall_data])
 
-    # Підготовка транзакції
-    txn = {
-        "to": CONTRACT,
-        "data": call_data,
+    # Виклик encodeABI через функцію multicall
+    call_data = contract.functions.multicall(multicall_data).build_transaction({
+        "from": wallet_address,
+        "nonce": w3.eth.get_transaction_count(wallet_address),
         "gas": 800000,
         "gasPrice": w3.to_wei('10', 'gwei'),
-        "nonce": w3.eth.get_transaction_count(wallet_address),
         "chainId": 42161  # Arbitrum One
-    }
+    })
 
     # Підпис транзакції
-    signed_txn = w3.eth.account.sign_transaction(txn, private_key)
+    signed_txn = w3.eth.account.sign_transaction(call_data, private_key)
     print(f"✅ Транзакція підписана для {wallet_address}")
 
     # Відправка транзакції
