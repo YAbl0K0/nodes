@@ -1,6 +1,7 @@
 import csv
 import json
 from web3 import Web3
+from eth_abi import encode
 
 # Підключення до RPC Arbitrum
 w3 = Web3(Web3.HTTPProvider("https://arb-mainnet.g.alchemy.com/v2/CZp2sOzdTa1SZukXkVGpP0kpsyhJL5nL"))
@@ -38,24 +39,13 @@ def format_wallet_address(address: str) -> str:
 
 # Формування multicall даних
 def prepare_multicall_data(method_id, wallet_address):
-    formatted_address = format_wallet_address(wallet_address)
-    combined_string = method_id + formatted_address
-
-    # Розділення на 2 частини
-    part1 = combined_string[:64]
-    part2 = combined_string[64:]
 
     # Формування байтового масиву
-    array = [
-        "0000000000000000000000000000000000000000000000000000000000000020",
-        "0000000000000000000000000000000000000000000000000000000000000001",
-        "0000000000000000000000000000000000000000000000000000000000000020",
-        "0000000000000000000000000000000000000000000000000000000000000024",
-        part1,
-        part2
-    ]
-
-    return array
+    first_part = "f39a19bf000000000000000000000000"
+    wallet_address = "0x0FED18aB6A2CbC49B0E55a46b2926FBDe453a848"
+    formatted_address = format_wallet_address(wallet_address)
+    function_data = first_part + formatted_address
+    multicall_data = encode(['bytes'], [bytes.fromhex(function_data)])
 
 # Виконання multicall для одного гаманця
 def multicall_for_wallet(wallet_address, private_key):
