@@ -70,7 +70,7 @@ def multicall_for_wallet(wallet_address, private_key):
     print(f"✅ Транзакція підписана для {wallet_address}")
 
     # Відправка транзакції
-    tx_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     print(f"✅ Транзакція відправлена для {wallet_address}. Hash: {tx_hash.hex()}")
 
     # Очікування підтвердження
