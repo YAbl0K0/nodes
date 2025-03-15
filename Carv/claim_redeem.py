@@ -38,36 +38,35 @@ def format_wallet_address(address: str) -> str:
     return address.rjust(64, '0')
 
 # Формування multicall даних
-def prepare_multicall_data(method_id, wallet_address):
-
-    # Формування байтового масиву
-    first_part = "f39a19bf000000000000000000000000"
-    wallet_address = "0x0FED18aB6A2CbC49B0E55a46b2926FBDe453a848"
+def prepare_multicall_data(wallet_address):
+    method_id = "f39a19bf"
     formatted_address = format_wallet_address(wallet_address)
-    function_data = first_part + formatted_address
-    multicall_data = encode(['bytes'], [bytes.fromhex(function_data)])
+    function_data = method_id + formatted_address
+    
+    # Перетворення рядка на байти
+    encoded_data = bytes.fromhex(function_data)
 
-    print(type(multicall_data))
+    # Повертаємо байти, як очікує multicall
+    return [encoded_data]
+
 # Виконання multicall для одного гаманця
 def multicall_for_wallet(wallet_address, private_key):
     contract = access_contract(CONTRACT)
 
     # Підготовка даних
-    method_id = "f39a19bf"
-    multicall_data = prepare_multicall_data(method_id, wallet_address)
+    multicall_data = prepare_multicall_data(wallet_address)
 
-    # Виклик encodeABI через функцію multicall
-    call_data = contract.functions.multicall(multicall_data).build_transaction({
+    # Виклик build_transaction для multicall
+    txn = contract.functions.multicall(multicall_data).build_transaction({
         "from": wallet_address,
         "nonce": w3.eth.get_transaction_count(wallet_address),
         "gas": 800000,
         "gasPrice": w3.to_wei('10', 'gwei'),
         "chainId": 42161  # Arbitrum One
     })
-    
-    print(type(multicall_data))
+
     # Підпис транзакції
-    signed_txn = w3.eth.account.sign_transaction(call_data, private_key)
+    signed_txn = w3.eth.account.sign_transaction(txn, private_key)
     print(f"✅ Транзакція підписана для {wallet_address}")
 
     # Відправка транзакції
