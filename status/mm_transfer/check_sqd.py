@@ -1,24 +1,26 @@
 import sys
 import subprocess
 
-# Встановлення Web3, якщо не встановлено
+# Установка web3 при необходимости
 try:
     from web3 import Web3
 except ImportError:
-    print("Встановлюємо web3...")
+    print("Устанавливаем web3...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
     from web3 import Web3
 
-# 🔑 Встав сюди свій Alchemy API KEY
-ALCHEMY_KEY = "CZp2sOzdTa1SZukXkVGpP0kpsyhJL5nL"
-RPC_URLS = {
-    "Arbitrum": f"https://arb-mainnet.g.alchemy.com/v2/{ALCHEMY_KEY}"
-}
+# 🔑 Вставь сюда свой Alchemy API ключ
+ALCHEMY_KEY = "uxH9ix8Ifu27RJO332Yii9nqVqGqUTRa"
+RPC_URL = f"https://arb-mainnet.g.alchemy.com/v2/{ALCHEMY_KEY}"
 
-# Адреса контракту токена SQD
-SQD_CONTRACT_ADDRESS = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
+# Подключение к Arbitrum через Alchemy
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
+assert w3.is_connected(), "❌ Не удалось подключиться к Alchemy RPC Arbitrum"
 
-# ABI тільки з balanceOf (без decimals, бо воно не працює)
+# Адрес контракта токена SQD
+SQD_CONTRACT = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
+
+# Минимальный ABI только с balanceOf
 MIN_ABI = [
     {
         "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
@@ -29,15 +31,11 @@ MIN_ABI = [
     }
 ]
 
-# Підключення
-w3 = Web3(Web3.HTTPProvider(RPC_URLS["Arbitrum"]))
-assert w3.is_connected(), "❌ Не вдалося підключитись до Alchemy Arbitrum RPC!"
-
 def to_checksum(address):
     try:
         return Web3.to_checksum_address(address)
     except:
-        print(f"❌ Некоректний адрес: {address}")
+        print(f"❌ Некорректный адрес: {address}")
         return None
 
 def get_sqd_balance(address):
@@ -45,25 +43,25 @@ def get_sqd_balance(address):
         address = to_checksum(address)
         if not address:
             return 0.0
-        contract = w3.eth.contract(address=SQD_CONTRACT_ADDRESS, abi=MIN_ABI)
-        raw = contract.functions.balanceOf(address).call()
-        return round(raw / (10 ** 18), 3)  # SQD має 18 децималів
+        contract = w3.eth.contract(address=SQD_CONTRACT, abi=MIN_ABI)
+        raw_balance = contract.functions.balanceOf(address).call()
+        return round(raw_balance / (10 ** 18), 3)  # SQD имеет 18 децималей
     except Exception as e:
-        print(f"[DEBUG] Помилка для {address}: {e}")
+        print(f"[DEBUG] Ошибка для {address}: {e}")
         return 0.0
 
-def check_sqd():
+def check_sqd_from_file():
     try:
-        with open("wallet.txt", "r") as file:
-            addresses = [line.strip() for line in file.readlines()]
+        with open("wallet.txt", "r") as f:
+            addresses = [line.strip() for line in f.readlines()]
     except FileNotFoundError:
-        print("Файл wallet.txt не знайдено.")
+        print("Файл wallet.txt не найден.")
         return
 
     print("Адрес;SQD")
-    for address in addresses:
-        balance = get_sqd_balance(address)
-        print(f"{address};{balance}")
+    for addr in addresses:
+        balance = get_sqd_balance(addr)
+        print(f"{addr};{balance}")
 
 if __name__ == "__main__":
-    check_sqd()
+    check_sqd_from_file()
