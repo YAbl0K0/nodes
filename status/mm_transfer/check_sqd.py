@@ -15,7 +15,7 @@ RPC_URLS = {
 }
 
 # Контракт SQD на Arbitrum
-SQD_CONTRACT_ADDRESS = "0xD878bF0f194BEdA8C2F2fBdb0E1f23029c6c8c1F"
+SQD_CONTRACT_ADDRESS = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
 
 # Минимальный ABI для токена ERC20
 MIN_ABI = [
