@@ -10,7 +10,7 @@ except ImportError:
     from web3 import Web3
 
 # 🔑 Встав сюди свій Alchemy API KEY
-ALCHEMY_KEY = "встав_сюди_API_ключ"
+ALCHEMY_KEY = "CZp2sOzdTa1SZukXkVGpP0kpsyhJL5nL"
 RPC_URLS = {
     "Arbitrum": f"https://arb-mainnet.g.alchemy.com/v2/{ALCHEMY_KEY}"
 }
