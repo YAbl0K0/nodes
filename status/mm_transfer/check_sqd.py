@@ -20,17 +20,10 @@ SQD_CONTRACT_ADDRESS = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
 # ERC20 ABI мінімальний
 MIN_ABI = [
     {
-        "constant": True,
-        "inputs": [{"name": "_owner", "type": "address"}],
+        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
         "name": "balanceOf",
-        "outputs": [{"name": "balance", "type": "uint256"}],
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [{"name": "", "type": "uint8"}],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
         "type": "function"
     }
 ]
@@ -48,16 +41,16 @@ def to_checksum(address):
         return None
 
 def get_sqd_balance(address):
-    """Отримує баланс SQD у Arbitrum"""
+    """Отримує баланс SQD у Arbitrum (fixed ABI & decimals)"""
     try:
         w3 = w3_networks["Arbitrum"]
         address = to_checksum(address)
         if not address:
             return 0.0
+
         contract = w3.eth.contract(address=Web3.to_checksum_address(SQD_CONTRACT_ADDRESS), abi=MIN_ABI)
         raw_balance = contract.functions.balanceOf(address).call()
-        decimals = contract.functions.decimals().call()
-        return round(raw_balance / (10 ** decimals), 3)
+        return round(raw_balance / (10 ** 18), 3)  # 18 decimals зафіксовано вручну
     except Exception as e:
         print(f"[DEBUG] Помилка SQD для {address}: {e}")
         return 0.0
