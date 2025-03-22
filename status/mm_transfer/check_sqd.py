@@ -1,7 +1,7 @@
 import sys
 import subprocess
 
-# Проверяем, установлен ли web3, и при необходимости устанавливаем
+# Установка web3 при необхідності
 try:
     from web3 import Web3
 except ImportError:
@@ -9,15 +9,15 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
     from web3 import Web3
 
-# RPC-узлы для каждой сети
+# RPC для Ethereum (можна замінити на Alchemy/Infura з API ключем)
 RPC_URLS = {
-    "Arbitrum": "https://arb1.arbitrum.io/rpc",
+    "Ethereum": "https://rpc.ankr.com/eth"
 }
 
-# Контракт SQD на Arbitrum
+# Контракт SQD у мережі Ethereum
 SQD_CONTRACT_ADDRESS = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
 
-# Минимальный ABI для токена ERC20
+# Мінімальний ABI ERC-20 токена
 MIN_ABI = [
     {
         "constant": True,
@@ -35,48 +35,41 @@ MIN_ABI = [
     }
 ]
 
-# Подключение к сетям
+# Підключення до Ethereum
 w3_networks = {name: Web3(Web3.HTTPProvider(url)) for name, url in RPC_URLS.items()}
 for name, w3 in w3_networks.items():
-    assert w3.is_connected(), f"Ошибка: Не удалось подключиться к сети {name}!"
+    assert w3.is_connected(), f"❌ Не вдалося підключитися до {name}!"
 
 def to_checksum(address):
     try:
         return Web3.to_checksum_address(address)
     except:
-        print(f"❌ Ошибка: {address} не является корректным Ethereum-адресом.")
+        print(f"❌ Некоректний адрес: {address}")
         return None
 
-def get_eth_balance(network, address):
-    address = to_checksum(address)
-    if not address:
-        return 0
-    try:
-        balance = w3_networks[network].eth.get_balance(address)
-        balance_eth = float(w3_networks[network].from_wei(balance, 'ether'))
-        return round(balance_eth, 3)
-    except Exception as e:
-        print(f"Ошибка получения баланса в {network} для {address}: {e}")
-        return 0
-
 def get_sqd_balance(address):
-    """Получает баланс токена SQD на Arbitrum"""
+    """Отримує баланс SQD у Ethereum"""
     try:
-        w3 = w3_networks["Arbitrum"]
+        w3 = w3_networks["Ethereum"]
         address = to_checksum(address)
+        if not address:
+            return 0.0
         contract = w3.eth.contract(address=Web3.to_checksum_address(SQD_CONTRACT_ADDRESS), abi=MIN_ABI)
-
         raw_balance = contract.functions.balanceOf(address).call()
         decimals = contract.functions.decimals().call()
         return round(raw_balance / (10 ** decimals), 3)
     except Exception as e:
-        print(f"[DEBUG] Ошибка SQD для {address}: {e}")
+        print(f"[DEBUG] Помилка SQD для {address}: {e}")
         return 0.0
 
 def check_sqd():
-    """Читает адреса и выводит только баланс SQD в Arbitrum"""
-    with open("wallet.txt", "r") as file:
-        addresses = file.readlines()
+    """Читає адреси з wallet.txt та показує баланс SQD"""
+    try:
+        with open("wallet.txt", "r") as file:
+            addresses = file.readlines()
+    except FileNotFoundError:
+        print("Файл wallet.txt не знайдено.")
+        return
 
     print("Адрес;SQD")
     for address in addresses:
