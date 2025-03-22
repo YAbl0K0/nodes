@@ -13,7 +13,7 @@ else:
     print("✅ Підключення до RPC успішне")
 
 # Адреса контракту
-CONTRACT = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
+CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
 
 # ABI контракту
 manual_abi = [
@@ -42,7 +42,7 @@ def prepare_multicall_data(wallet_address):
     method_id = "f39a19bf"
     formatted_address = format_wallet_address(wallet_address)
     function_data = method_id + formatted_address
-    
+
     # Перетворення рядка на байти
     encoded_data = bytes.fromhex(function_data)
 
