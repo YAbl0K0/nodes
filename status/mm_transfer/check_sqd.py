@@ -1,78 +1,37 @@
-import sys
-import subprocess
+import requests
 
-# Установка web3, якщо не встановлено
-try:
-    from web3 import Web3
-except ImportError:
-    print("web3 не найден. Устанавливаем...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
-    from web3 import Web3
+COVALENT_API_KEY = "CZp2sOzdTa1SZukXkVGpP0kpsyhJL5nL"
+CHAIN_ID = 42161  # Arbitrum
 
-# RPC для Arbitrum (надійний публічний)
-RPC_URLS = {
-    "Arbitrum": "https://1rpc.io/arb"
-}
-
-# Контракт токена SQD в Arbitrum
-SQD_CONTRACT_ADDRESS = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
-
-# ERC20 ABI мінімальний
-MIN_ABI = [
-    {
-        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
-        "name": "balanceOf",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
-
-# Підключення до Arbitrum
-w3_networks = {name: Web3(Web3.HTTPProvider(url)) for name, url in RPC_URLS.items()}
-for name, w3 in w3_networks.items():
-    assert w3.is_connected(), f"❌ Не вдалося підключитися до мережі {name}!"
-
-def to_checksum(address):
+def get_sqd_balance_covalent(address):
     try:
-        return Web3.to_checksum_address(address)
-    except:
-        print(f"❌ Некоректний адрес: {address}")
-        return None
+        url = f"https://api.covalenthq.com/v1/{CHAIN_ID}/address/{address}/balances_v2/"
+        params = {"key": COVALENT_API_KEY}
+        response = requests.get(url, params=params)
+        data = response.json()
 
-def get_sqd_balance(address):
-    """Отримує баланс SQD у Arbitrum (fixed ABI & decimals)"""
-    try:
-        w3 = w3_networks["Arbitrum"]
-        address = to_checksum(address)
-        if not address:
-            return 0.0
-
-        contract = w3.eth.contract(address=Web3.to_checksum_address(SQD_CONTRACT_ADDRESS), abi=MIN_ABI)
-        raw_balance = contract.functions.balanceOf(address).call()
-        return round(raw_balance / (10 ** 18), 3)  # 18 decimals зафіксовано вручну
+        for token in data["data"]["items"]:
+            if token["contract_address"].lower() == "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab":
+                raw_balance = int(token["balance"])
+                decimals = token["contract_decimals"]
+                return round(raw_balance / (10 ** decimals), 3)
+        return 0.0  # Якщо SQD не знайдено
     except Exception as e:
-        print(f"[DEBUG] Помилка SQD для {address}: {e}")
+        print(f"[DEBUG] Помилка при запиті Covalent для {address}: {e}")
         return 0.0
 
-def check_sqd():
-    """Читає адреси з wallet.txt та виводить баланс SQD"""
+def check_sqd_from_file():
     try:
         with open("wallet.txt", "r") as file:
-            addresses = file.readlines()
+            addresses = [line.strip() for line in file.readlines()]
     except FileNotFoundError:
         print("Файл wallet.txt не знайдено.")
         return
 
     print("Адрес;SQD")
     for address in addresses:
-        address = address.strip()
-        checksum_address = to_checksum(address)
-        if not checksum_address:
-            print(f"{address};0.000")
-            continue
-        balance = get_sqd_balance(checksum_address)
-        print(f"{checksum_address};{balance}")
+        balance = get_sqd_balance_covalent(address)
+        print(f"{address};{balance}")
 
 if __name__ == "__main__":
-    check_sqd()
+    check_sqd_from_file()
