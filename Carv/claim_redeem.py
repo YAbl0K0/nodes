@@ -13,7 +13,7 @@ else:
     print("✅ Підключення до RPC успішне")
 
 # Адреса контракту
-CONTRACT = "0xa91fF8b606BA57D8c6638Dd8CF3FC7eB15a9c634"
+CONTRACT = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
 
 # ABI контракту
 manual_abi = [
