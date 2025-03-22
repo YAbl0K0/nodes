@@ -11,7 +11,7 @@ except ImportError:
 
 # RPC для Arbitrum (надійний публічний)
 RPC_URLS = {
-    "Arbitrum": "https://arbitrum.blockpi.network/v1/rpc/public"
+    "Arbitrum": "https://1rpc.io/arb"
 }
 
 # Контракт токена SQD в Arbitrum
