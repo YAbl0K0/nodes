@@ -58,7 +58,7 @@ def check_balances():
         print(f"{i} - {network}")
     
     choice = input("Введите номер сети: ")
-    
+
     if choice == "1":
         selected_networks = list(RPC_URLS.keys())
     else:
@@ -72,7 +72,8 @@ def check_balances():
     print("Адрес;" + ";".join(selected_networks))
 
     with ThreadPoolExecutor(max_workers=100) as executor:
-        futures = [executor.submit(check_address_balances, addr, selected_networks) for addr in ad>        for future in as_completed(futures):
+        futures = [executor.submit(check_address_balances, addr, selected_networks) for addr in addresses]
+        for future in as_completed(futures):
             print(future.result())
 
 if __name__ == "__main__":
