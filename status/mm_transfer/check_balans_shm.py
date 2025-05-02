@@ -1,24 +1,59 @@
-from web3 import Web3
+import sys
+import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# RPC нода Shardeum
-rpc_url = "https://dapps.shardeum.org/"
-web3 = Web3(Web3.HTTPProvider(rpc_url))
+# Установка web3, если не установлен
+try:
+    from web3 import Web3
+except ImportError:
+    print("web3 не найден. Устанавливаем...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
+    from web3 import Web3
 
-if not web3.isConnected():
-    print("❌ Не удалось подключиться к RPC")
-    exit()
+# RPC для сети Shardeum
+RPC_URL = "https://dapps.shardeum.org/"
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-# Загрузка адресов из файла
-with open("shm_addresses.txt", "r") as f:
-    addresses = [line.strip() for line in f if line.strip().startswith("0x")]
+if not w3.is_connected():
+    print("❌ Не удалось подключиться к RPC Shardeum!")
+    sys.exit()
 
-print(f"🔍 Проверка {len(addresses)} адресов...\n")
-
-# Проверка баланса каждого адреса
-for address in addresses:
+def to_checksum(address):
     try:
-        balance_wei = web3.eth.get_balance(address)
-        balance_shm = web3.fromWei(balance_wei, 'ether')
-        print(f"{address} → {balance_shm} SHM")
+        return Web3.to_checksum_address(address.strip())
+    except:
+        print(f"❌ Ошибка: {address} не является корректным Ethereum-адресом.")
+        return None
+
+def get_shm_balance(address):
+    try:
+        balance_wei = w3.eth.get_balance(address)
+        balance_shm = w3.from_wei(balance_wei, 'ether')
+        return round(float(balance_shm), 6)
     except Exception as e:
-        print(f"{address} → Ошибка: {e}")
+        print(f"Ошибка при получении баланса {address}: {e}")
+        return 0.0
+
+def check_address(address):
+    checksum_address = to_checksum(address)
+    if not checksum_address:
+        return f"{address};ERROR"
+    balance = get_shm_balance(checksum_address)
+    return f"{checksum_address};{balance} SHM"
+
+def check_all_addresses():
+    try:
+        with open("wallet.txt", "r") as file:
+            addresses = [line.strip() for line in file if line.strip()]
+    except FileNotFoundError:
+        print("Файл wallet.txt не найден.")
+        return
+
+    print("Адрес;Баланс SHM")
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        futures = [executor.submit(check_address, addr) for addr in addresses]
+        for future in as_completed(futures):
+            print(future.result())
+
+if __name__ == "__main__":
+    check_all_addresses()
