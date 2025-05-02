@@ -50,7 +50,7 @@ def check_all_addresses():
         return
 
     print("Адрес;Баланс SHM")
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(check_address, addr) for addr in addresses]
         for future in as_completed(futures):
             print(future.result())
