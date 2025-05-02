@@ -11,7 +11,7 @@ except ImportError:
     from web3 import Web3
 
 # RPC для сети Shardeum
-RPC_URL = "https://api-testnet.shardeum.org"
+RPC_URL = "https://api.shardeum.org"
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
 if not w3.is_connected():
