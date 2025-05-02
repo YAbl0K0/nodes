@@ -1,5 +1,6 @@
 import sys
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Установка web3, если не установлен
@@ -27,11 +28,12 @@ def to_checksum(address):
 
 def get_shm_balance(address):
     try:
+        time.sleep(0.5)
         balance_wei = w3.eth.get_balance(address)
         balance_shm = w3.from_wei(balance_wei, 'ether')
         return round(float(balance_shm), 6)
     except Exception as e:
-        print(f"Ошибка при получении баланса {address}: {e}")
+        print("balance error")
         return 0.0
 
 def check_address(address):
