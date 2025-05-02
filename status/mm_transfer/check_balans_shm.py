@@ -43,7 +43,7 @@ def check_address(address):
 
 def check_all_addresses():
     try:
-        with open("wallet.txt", "r") as file:
+        with open("shm_wallet.txt", "r") as file:
             addresses = [line.strip() for line in file if line.strip()]
     except FileNotFoundError:
         print("Файл wallet.txt не найден.")
