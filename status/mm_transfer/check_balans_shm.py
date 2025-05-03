@@ -28,7 +28,7 @@ def to_checksum(address):
 
 def get_shm_balance(address):
     try:
-        time.sleep(0.5)
+        time.sleep(1)
         balance_wei = w3.eth.get_balance(address)
         balance_shm = w3.from_wei(balance_wei, 'ether')
         return round(float(balance_shm), 6)
@@ -52,7 +52,7 @@ def check_all_addresses():
         return
 
     print("Адрес;Баланс SHM")
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = [executor.submit(check_address, addr) for addr in addresses]
         for future in as_completed(futures):
             print(future.result())
