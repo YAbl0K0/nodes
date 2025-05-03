@@ -17,6 +17,7 @@ w3 = Web3(Web3.HTTPProvider(RPC_URL))
 if not w3.is_connected():
     with open("shm_results.txt", "a") as log_file:
         log_file.write("❌ Не удалось подключиться к RPC Shardeum!\n")
+        print("❌ Не удалось подключиться к RPC Shardeum!")
     sys.exit()
 
 def to_checksum(address):
@@ -25,6 +26,7 @@ def to_checksum(address):
     except:
         with open("shm_results.txt", "a") as log_file:
             log_file.write(f"❌ Ошибка: {address} не является корректным Ethereum-адресом.\n")
+            print(f"❌ Ошибка: {address} не является корректным Ethereum-адресом.")
         return None
 
 def get_shm_balance(address):
@@ -36,6 +38,7 @@ def get_shm_balance(address):
     except Exception:
         with open("shm_results.txt", "a") as log_file:
             log_file.write(f"balance error for {address}\n")
+            print(f"balance error for {address}")
         return 0.0
 
 def check_address(address):
@@ -52,14 +55,18 @@ def check_all_addresses():
     except FileNotFoundError:
         with open("shm_results.txt", "a") as log_file:
             log_file.write("Файл shm_wallet.txt не найден.\n")
+            print("Файл shm_wallet.txt не найден.")
         return
 
     with open("shm_results.txt", "a") as log_file:
         log_file.write("Адрес;Баланс SHM\n")
+        print("Адрес;Баланс SHM")
         with ThreadPoolExecutor(max_workers=1) as executor:
             futures = [executor.submit(check_address, addr) for addr in addresses]
             for future in as_completed(futures):
-                log_file.write(future.result() + "\n")
+                result = future.result()
+                log_file.write(result + "\n")
+                print(result)
 
 if __name__ == "__main__":
     check_all_addresses()
