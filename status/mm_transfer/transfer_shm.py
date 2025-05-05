@@ -55,21 +55,32 @@ def send_shm(private_key, sender, recipient):
         }
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        tx_url = f"https://explorer.shardeum.org/transaction/{w3.to_hex(tx_hash)}"
 
-        print(f"✅ TX отправлена: {tx_url}")
+        for attempt in range(RETRY_LIMIT):
+            try:
+                tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+                tx_url = f"https://explorer.shardeum.org/transaction/{w3.to_hex(tx_hash)}"
+                print(f"✅ TX отправлена: {tx_url}")
 
-        with open("tx_hashes.log", "a") as f:
-            f.write(f"{sender} → {recipient}: {send_amount} SHM | TX: {tx_url}\n")
-
-        time.sleep(2)
+                with open("tx_hashes.log", "a") as f:
+                    f.write(f"{sender} → {recipient}: {send_amount} SHM | TX: {tx_url}\n")
+                return
+            except Exception as e:
+                if "Maximum load exceeded" in str(e) and attempt < RETRY_LIMIT - 1:
+                    wait_time = 5 + attempt * 2
+                    print(f"⚠️ Перегрузка RPC, повтор через {wait_time} сек...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"❌ Ошибка у {sender}: {e}")
+                    with open("errors.log", "a") as f:
+                        f.write(f"{sender}: {e}\n")
+                    return
 
     except Exception as e:
         print(f"❌ Ошибка у {sender}: {e}")
         with open("errors.log", "a") as f:
             f.write(f"{sender}: {e}\n")
-
+            
 def main():
     try:
         with open("addresses_shm.txt", "r") as f:
@@ -81,11 +92,11 @@ def main():
                 sender = w3.to_checksum_address(sender)
                 recipient = w3.to_checksum_address(recipient)
                 send_shm(private_key, sender, recipient)
-                time.sleep(random.uniform(2, 5))
+                time.sleep(random.uniform(5, 10))
             except Exception as e:
                 print(f"⚠️ Ошибка строки '{line}': {e}")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             executor.map(process, lines)
 
     except FileNotFoundError:
