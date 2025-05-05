@@ -5,27 +5,26 @@ from web3 import Web3
 import concurrent.futures
 from decimal import Decimal, getcontext
 
-# Точность
 getcontext().prec = 30
 
-# RPC Shardeum
+# Один фиксированный RPC
 RPC_URL = "https://api.shardeum.org"
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-# Проверка соединения
+# Проверка подключения
 if not w3.is_connected():
     print("❌ Не удалось подключиться к RPC Shardeum!")
     sys.exit()
 
-CHAIN_ID = 8118  # mainnet Shardeum
-GAS_LIMIT = 21000  # стандартный газ для перевода нативных токенов
+CHAIN_ID = 8118
+GAS_LIMIT = 21000
+RETRY_LIMIT = 3  # кол-во попыток при ошибке 101
 
 def get_gas_price():
     try:
         return w3.eth.gas_price
-    except Exception as e:
-        print(f"❌ Ошибка получения цены газа: {e}")
-        return w3.to_wei(1, 'gwei')  # fallback
+    except:
+        return w3.to_wei(1, 'gwei')
 
 def send_shm(private_key, sender, recipient):
     try:
@@ -37,7 +36,7 @@ def send_shm(private_key, sender, recipient):
         required_wei = gas_price * GAS_LIMIT
 
         if balance_wei <= required_wei:
-            print(f"⚠️ Недостаточно SHM для оплаты газа, пропускаем {sender}")
+            print(f"⚠️ Недостаточно SHM для газа, пропускаем {sender}")
             return
 
         send_amount_wei = balance_wei - required_wei
@@ -68,7 +67,7 @@ def send_shm(private_key, sender, recipient):
             except Exception as e:
                 if "Maximum load exceeded" in str(e) and attempt < RETRY_LIMIT - 1:
                     wait_time = 5 + attempt * 2
-                    print(f"⚠️ Перегрузка RPC, повтор через {wait_time} сек...")
+                    print(f"⚠️ Перегрузка RPC, повтор {attempt + 1}/3 через {wait_time} сек...")
                     time.sleep(wait_time)
                 else:
                     print(f"❌ Ошибка у {sender}: {e}")
@@ -77,10 +76,10 @@ def send_shm(private_key, sender, recipient):
                     return
 
     except Exception as e:
-        print(f"❌ Ошибка у {sender}: {e}")
+        print(f"❌ Общая ошибка у {sender}: {e}")
         with open("errors.log", "a") as f:
             f.write(f"{sender}: {e}\n")
-            
+
 def main():
     try:
         with open("addresses_shm.txt", "r") as f:
@@ -92,7 +91,7 @@ def main():
                 sender = w3.to_checksum_address(sender)
                 recipient = w3.to_checksum_address(recipient)
                 send_shm(private_key, sender, recipient)
-                time.sleep(random.uniform(5, 10))
+                time.sleep(random.uniform(4, 8))
             except Exception as e:
                 print(f"⚠️ Ошибка строки '{line}': {e}")
 
@@ -100,7 +99,7 @@ def main():
             executor.map(process, lines)
 
     except FileNotFoundError:
-        print("❌ Файл addresses.txt не найден!")
+        print("❌ Файл addresses_shm.txt не найден!")
 
 if __name__ == "__main__":
     main()
