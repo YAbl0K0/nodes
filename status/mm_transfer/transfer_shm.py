@@ -9,7 +9,7 @@ import json
 getcontext().prec = 30
 
 # RPC для SHM
-RPC_URL = "https://sphinx.shardeum.org/"
+RPC_URL = "https://api.shardeum.org/"
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 assert w3.is_connected(), "❌ Не удалось подключиться к RPC Shardeum!"
 
