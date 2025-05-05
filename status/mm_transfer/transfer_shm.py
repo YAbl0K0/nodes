@@ -72,7 +72,7 @@ def send_shm(private_key, sender, recipient):
 
 def main():
     try:
-        with open("addresses.txt", "r") as f:
+        with open("addresses_ырь.txt", "r") as f:
             lines = [line.strip() for line in f if line.strip()]
 
         def process(line):
