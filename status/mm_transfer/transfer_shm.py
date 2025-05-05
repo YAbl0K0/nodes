@@ -17,8 +17,8 @@ if not w3.is_connected():
     sys.exit()
 
 CHAIN_ID = 8118
-GAS_LIMIT = 21000
-RETRY_LIMIT = 3  # кол-во попыток при ошибке 101
+GAS_LIMIT = 22000
+RETRY_LIMIT = 5  # кол-во попыток при ошибке 101
 
 def get_gas_price():
     try:
@@ -91,11 +91,11 @@ def main():
                 sender = w3.to_checksum_address(sender)
                 recipient = w3.to_checksum_address(recipient)
                 send_shm(private_key, sender, recipient)
-                time.sleep(random.uniform(4, 8))
+                time.sleep(random.uniform(5, 10))
             except Exception as e:
                 print(f"⚠️ Ошибка строки '{line}': {e}")
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             executor.map(process, lines)
 
     except FileNotFoundError:
