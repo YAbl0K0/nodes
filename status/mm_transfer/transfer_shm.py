@@ -2,95 +2,94 @@ import sys
 import time
 import random
 from web3 import Web3
-from decimal import Decimal, getcontext
 import concurrent.futures
-import json
+from decimal import Decimal, getcontext
 
+# Точность
 getcontext().prec = 30
 
-# RPC для SHM
-RPC_URL = "https://api.shardeum.org/"
+# RPC Shardeum
+RPC_URL = "https://api.shardeum.org"
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
-assert w3.is_connected(), "❌ Не удалось подключиться к RPC Shardeum!"
 
-CHAIN_ID = 8081  # или 1, если это mainnet SHM
-GAS_LIMIT = 60000
+# Проверка соединения
+if not w3.is_connected():
+    print("❌ Не удалось подключиться к RPC Shardeum!")
+    sys.exit()
 
-# Адрес контракта SHM и ABI (частичный, только для transfer)
-TOKEN_ADDRESS = w3.to_checksum_address("0x...")  # адрес токена SHM, если это ERC20
-with open("erc20_abi.json") as f:
-    ERC20_ABI = json.load(f)
+CHAIN_ID = 8118  # mainnet Shardeum
+GAS_LIMIT = 21000  # стандартный газ для перевода нативных токенов
 
-token_contract = w3.eth.contract(address=TOKEN_ADDRESS, abi=ERC20_ABI)
-
-def get_token_balance(address):
+def get_gas_price():
     try:
-        balance = token_contract.functions.balanceOf(address).call()
-        return w3.from_wei(balance, 'ether')
+        return w3.eth.gas_price
     except Exception as e:
-        print(f"❌ Ошибка при получении баланса токена: {e}")
-        return 0.0
+        print(f"❌ Ошибка получения цены газа: {e}")
+        return w3.to_wei(1, 'gwei')  # fallback
 
-def send_token(private_key, sender, recipient):
-    balance_wei = token_contract.functions.balanceOf(sender).call()
-    token_balance = w3.from_wei(balance_wei, 'ether')
-    print(f"💰 Баланс SHM у {sender}: {token_balance}")
-
-    if balance_wei == 0:
-        print(f"⚠️ Пропускаем {sender}, токенов нет")
-        return
-
-    nonce = w3.eth.get_transaction_count(sender, "pending")
-    gas_price = w3.eth.gas_price
-
+def send_shm(private_key, sender, recipient):
     try:
-        tx = token_contract.functions.transfer(recipient, balance_wei).build_transaction({
-            'chainId': CHAIN_ID,
+        balance_wei = w3.eth.get_balance(sender)
+        balance = w3.from_wei(balance_wei, 'ether')
+        print(f"💰 Баланс {sender}: {balance} SHM")
+
+        gas_price = get_gas_price()
+        required_wei = gas_price * GAS_LIMIT
+
+        if balance_wei <= required_wei:
+            print(f"⚠️ Недостаточно SHM для оплаты газа, пропускаем {sender}")
+            return
+
+        send_amount_wei = balance_wei - required_wei
+        send_amount = w3.from_wei(send_amount_wei, 'ether')
+        print(f"📤 Отправляем {send_amount} SHM → {recipient}")
+
+        nonce = w3.eth.get_transaction_count(sender, 'pending')
+        tx = {
+            'nonce': nonce,
+            'to': recipient,
+            'value': send_amount_wei,
             'gas': GAS_LIMIT,
             'gasPrice': gas_price,
-            'nonce': nonce,
-        })
+            'chainId': CHAIN_ID
+        }
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        print(f"✅ Отправлено {token_balance} SHM → {recipient} | TX: {w3.to_hex(tx_hash)}")
+        tx_url = f"https://explorer.shardeum.org/transaction/{w3.to_hex(tx_hash)}"
 
-        with open("tx_hashes.log", "a") as log_file:
-            log_file.write(f"{sender} -> {recipient}: {token_balance} SHM | TX: {w3.to_hex(tx_hash)}\n")
+        print(f"✅ TX отправлена: {tx_url}")
 
-        time.sleep(5)
+        with open("tx_hashes.log", "a") as f:
+            f.write(f"{sender} → {recipient}: {send_amount} SHM | TX: {tx_url}\n")
+
+        time.sleep(2)
 
     except Exception as e:
-        print(f"❌ Ошибка при отправке токенов от {sender}: {e}")
+        print(f"❌ Ошибка у {sender}: {e}")
         with open("errors.log", "a") as f:
             f.write(f"{sender}: {e}\n")
 
 def main():
     try:
-        with open("addresses.txt", "r") as file:
-            lines = [line.strip() for line in file if line.strip()]
-        
-        def process_line(line):
+        with open("addresses.txt", "r") as f:
+            lines = [line.strip() for line in f if line.strip()]
+
+        def process(line):
             try:
                 sender, private_key, recipient = line.split(";")
                 sender = w3.to_checksum_address(sender)
                 recipient = w3.to_checksum_address(recipient)
-
-                send_token(private_key, sender, recipient)
-
-                delay = random.uniform(2, 5)
-                print(f"⏳ Задержка {delay:.2f} сек")
-                time.sleep(delay)
-
+                send_shm(private_key, sender, recipient)
+                time.sleep(random.uniform(2, 5))
             except Exception as e:
                 print(f"⚠️ Ошибка строки '{line}': {e}")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            executor.map(process_line, lines)
+            executor.map(process, lines)
 
     except FileNotFoundError:
         print("❌ Файл addresses.txt не найден!")
 
 if __name__ == "__main__":
     main()
-
