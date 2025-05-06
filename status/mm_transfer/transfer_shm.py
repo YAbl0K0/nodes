@@ -37,7 +37,7 @@ def send_shm(private_key, sender, recipient):
 
         if balance_wei <= required_wei:
             print(f"⚠️ Недостаточно SHM для газа, пропускаем {sender}")
-            return
+            return True  # Считаем это "успешной" попыткой, т.к. отправлять не нужно
 
         send_amount_wei = balance_wei - required_wei
         send_amount = w3.from_wei(send_amount_wei, 'ether')
@@ -63,7 +63,7 @@ def send_shm(private_key, sender, recipient):
 
                 with open("tx_hashes.log", "a") as f:
                     f.write(f"{sender} → {recipient}: {send_amount} SHM | TX: {tx_url}\n")
-                return
+                return True
             except Exception as e:
                 if "Maximum load exceeded" in str(e) and attempt < RETRY_LIMIT - 1:
                     wait_time = 5 + attempt * 2
@@ -73,12 +73,12 @@ def send_shm(private_key, sender, recipient):
                     print(f"❌ Ошибка у {sender}: {e}")
                     with open("errors.log", "a") as f:
                         f.write(f"{sender}: {e}\n")
-                    return
-
+                    return False
     except Exception as e:
         print(f"❌ Общая ошибка у {sender}: {e}")
         with open("errors.log", "a") as f:
             f.write(f"{sender}: {e}\n")
+        return False
 
 def main():
     try:
@@ -90,7 +90,24 @@ def main():
                 sender, private_key, recipient = line.split(";")
                 sender = w3.to_checksum_address(sender)
                 recipient = w3.to_checksum_address(recipient)
-                send_shm(private_key, sender, recipient)
+
+                max_global_retries = 10
+                attempt = 0
+
+                while attempt < max_global_retries:
+                    success = send_shm(private_key, sender, recipient)
+                    if success:
+                        break
+                    attempt += 1
+                    print(f"🔁 Попытка {attempt}/{max_global_retries} для {sender}, через 10 сек...")
+                    time.sleep(10)
+
+                if attempt >= max_global_retries:
+                    print(f"❌ Превышено количество попыток для {sender}, аварийное завершение.")
+                    with open("errors.log", "a") as f:
+                        f.write(f"{sender}: Превышено {max_global_retries} попыток\n")
+                    sys.exit(1)
+
                 time.sleep(random.uniform(5, 10))
             except Exception as e:
                 print(f"⚠️ Ошибка строки '{line}': {e}")
