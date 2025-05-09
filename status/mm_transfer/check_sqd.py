@@ -1,98 +1,67 @@
-from web3 import Web3
-import time
-import random
+import sys
+import subprocess
 
-# Список RPC для Arbitrum
-RPC_LIST = [
-    "https://arb1.arbitrum.io/rpc",
-    "https://1rpc.io/arb"
+# Установка web3, если не установлен
+try:
+    from web3 import Web3
+except ImportError:
+    print("Устанавливаем web3...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
+    from web3 import Web3
+
+# RPC Arbitrum
+RPC_URL = "https://arb1.arbitrum.io/rpc"
+w3 = Web3(Web3.HTTPProvider(RPC_URL))
+assert w3.is_connected(), "❌ Не удалось подключиться к RPC Arbitrum"
+
+# SQD контракт (ERC-20 на Arbitrum)
+SQD_CONTRACT = Web3.to_checksum_address("0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1")
+
+# Минимальный ABI для чтения баланса
+MIN_ABI = [
+    {
+        "constant": True,
+        "inputs": [{"name": "account", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "type": "function",
+    }
 ]
 
-CHAIN_ID = 42161
-GAS_LIMIT = 120000
-TOKEN_DECIMALS = 18
-ERC20_CONTRACT_ADDRESS = "0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1"
-
-# Подключение с перебором RPC
-def get_w3():
-    for rpc in RPC_LIST:
-        try:
-            w3 = Web3(Web3.HTTPProvider(rpc))
-            if w3.is_connected():
-                return w3
-        except:
-            continue
-    raise Exception("❌ Не удалось подключиться ни к одному RPC!")
-
-w3 = get_w3()
-
-def GAS_PRICE():
-    return min(max(w3.eth.gas_price, w3.to_wei(0.01, 'gwei')), w3.to_wei(3, 'gwei'))
-
-def get_eth_balance(address):
-    return w3.eth.get_balance(address)
-
-def get_token_balance(address):
-    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
-        {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
-         "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
-    ])
-    return contract.functions.balanceOf(address).call() // (10 ** TOKEN_DECIMALS)
-
-def send_tokens(private_key, sender, recipient):
-    token_balance = get_token_balance(sender)
-    eth_balance = get_eth_balance(sender)
-    eth_balance_ether = w3.from_wei(eth_balance, 'ether')
-
-    if token_balance <= 0:
-        print(f"⚠️ Пропущен {sender}: 0 SQD")
-        return
-
-    gas_price = GAS_PRICE()
-    est_gas_cost = GAS_LIMIT * gas_price
-
-    if eth_balance < est_gas_cost:
-        print(f"❌ Недостаточно ETH на газ: {eth_balance_ether} ETH у {sender}")
-        return
-
-    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
-        {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}],
-         "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
-    ])
-
-    nonce = w3.eth.get_transaction_count(sender)
-    amount = token_balance * (10 ** TOKEN_DECIMALS)
-
+# Функция проверки адреса
+def to_checksum(address):
     try:
-        est_gas = contract.functions.transfer(recipient, amount).estimate_gas({'from': sender})
-        tx = contract.functions.transfer(recipient, amount).build_transaction({
-            'from': sender,
-            'nonce': nonce,
-            'gas': est_gas,
-            'gasPrice': gas_price,
-            'chainId': CHAIN_ID
-        })
-        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        print(f"✅ Отправлено {token_balance} SQD: {w3.to_hex(tx_hash)}")
+        return Web3.to_checksum_address(address.strip())
+    except:
+        print(f"❌ Некорректный адрес: {address}")
+        return None
+
+# Получить баланс SQD по адресу
+def get_sqd_balance(address):
+    try:
+        address = to_checksum(address)
+        if not address:
+            return 0.0
+        contract = w3.eth.contract(address=SQD_CONTRACT, abi=MIN_ABI)
+        raw = contract.functions.balanceOf(address).call()
+        return round(raw / 1e18, 6)  # шесть знаков после запятой
     except Exception as e:
-        print(f"❌ Ошибка при отправке с {sender}: {e}")
+        print(f"[DEBUG] Ошибка для {address}: {e}")
+        return 0.0
+
+# Чтение адресов из файла и вывод балансов
+def check_balances():
+    try:
+        with open("wallet_sqd.txt", "r") as f:
+            addresses = [line.strip() for line in f if line.strip()]
+    except FileNotFoundError:
+        print("❌ Файл wallet.txt не найден.")
         return
 
-def main():
-    with open("addresses.txt", "r") as file:
-        lines = file.readlines()
-
-    for line in lines:
-        try:
-            sender, private_key, recipient = line.strip().split(";")
-            sender = w3.to_checksum_address(sender)
-            recipient = w3.to_checksum_address(recipient)
-            print(f"💰 {sender}: {get_token_balance(sender)} SQD")
-            send_tokens(private_key, sender, recipient)
-            time.sleep(2)
-        except Exception as e:
-            print(f"⚠️ Пропущено {line.strip()}: {e}")
+    print("Адрес;Баланс SQD")
+    for addr in addresses:
+        balance = get_sqd_balance(addr)
+        print(f"{addr};{balance}")
 
 if __name__ == "__main__":
-    main()
+    check_balances()
