@@ -80,7 +80,7 @@ def send_tokens(private_key, sender, recipient):
         return
 
 def main():
-    with open("addresses.txt", "r") as file:
+    with open("addresses_sqd.txt", "r") as file:
         lines = file.readlines()
 
     for line in lines:
