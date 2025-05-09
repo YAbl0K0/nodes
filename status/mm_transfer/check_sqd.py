@@ -1,7 +1,7 @@
 import sys
 import subprocess
 
-# Установка web3 при необходимости
+# Установка web3, если не установлен
 try:
     from web3 import Web3
 except ImportError:
@@ -9,58 +9,59 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
     from web3 import Web3
 
-# ✅ Стабильный публичный RPC Arbitrum
-RPC_URL = "https://1rpc.io/arb"
-
-# Подключение к Arbitrum
+# RPC Arbitrum
+RPC_URL = "https://arb1.arbitrum.io/rpc"
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
-assert w3.is_connected(), "❌ Не удалось подключиться к Arbitrum RPC"
+assert w3.is_connected(), "❌ Не удалось подключиться к RPC Arbitrum"
 
-# Контракт токена SQD (в Arbitrum)
-SQD_CONTRACT = "0x1337420ded5adb9980cfc35f82b2b054ea86f8ab"
+# SQD контракт (ERC-20 на Arbitrum)
+SQD_CONTRACT = Web3.to_checksum_address("0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1")
 
-# Минимальный ABI с balanceOf
+# Минимальный ABI для чтения баланса
 MIN_ABI = [
     {
-        "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+        "constant": True,
+        "inputs": [{"name": "account", "type": "address"}],
         "name": "balanceOf",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function"
+        "outputs": [{"name": "", "type": "uint256"}],
+        "type": "function",
     }
 ]
 
+# Функция проверки адреса
 def to_checksum(address):
     try:
-        return Web3.to_checksum_address(address)
+        return Web3.to_checksum_address(address.strip())
     except:
         print(f"❌ Некорректный адрес: {address}")
         return None
 
+# Получить баланс SQD по адресу
 def get_sqd_balance(address):
     try:
         address = to_checksum(address)
         if not address:
             return 0.0
-        contract = w3.eth.contract(address=Web3.to_checksum_address(SQD_CONTRACT), abi=MIN_ABI)
+        contract = w3.eth.contract(address=SQD_CONTRACT, abi=MIN_ABI)
         raw = contract.functions.balanceOf(address).call()
-        return round(raw / (10 ** 18), 3)
+        return round(raw / 1e18, 6)  # шесть знаков после запятой
     except Exception as e:
         print(f"[DEBUG] Ошибка для {address}: {e}")
         return 0.0
 
-def check_sqd_from_file():
+# Чтение адресов из файла и вывод балансов
+def check_balances():
     try:
         with open("wallet_sqd.txt", "r") as f:
             addresses = [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
-        print("Файл wallet.txt не найден.")
+        print("❌ Файл wallet.txt не найден.")
         return
 
-    print("Адрес;SQD")
+    print("Адрес;Баланс SQD")
     for addr in addresses:
         balance = get_sqd_balance(addr)
         print(f"{addr};{balance}")
 
 if __name__ == "__main__":
-    check_sqd_from_file()
+    check_balances()
