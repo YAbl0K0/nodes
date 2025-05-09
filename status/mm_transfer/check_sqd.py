@@ -1,87 +1,98 @@
-import sys
-import subprocess
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from web3 import Web3
+import time
 import random
-
-# Установка web3 при необходимости
-try:
-    from web3 import Web3
-except ImportError:
-    print("Устанавливаем web3...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "web3"])
-    from web3 import Web3
 
 # Список RPC для Arbitrum
 RPC_LIST = [
     "https://arb1.arbitrum.io/rpc",
-    "https://1rpc.io/arb"  # альтернативный публичный
+    "https://1rpc.io/arb"
 ]
 
-# Контракт SQD на Arbitrum
-SQD_CONTRACT = Web3.to_checksum_address("0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1")
+CHAIN_ID = 42161
+GAS_LIMIT = 120000
+TOKEN_DECIMALS = 18
+ERC20_CONTRACT_ADDRESS = "0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1"
 
-# Минимальный ABI
-MIN_ABI = [
-    {
-        "constant": True,
-        "inputs": [{"name": "account", "type": "address"}],
-        "name": "balanceOf",
-        "outputs": [{"name": "", "type": "uint256"}],
-        "type": "function",
-    }
-]
-
-def to_checksum(address):
-    try:
-        return Web3.to_checksum_address(address.strip())
-    except:
-        print(f"❌ Некорректный адрес: {address}")
-        return None
-
-def get_sqd_balance_with_retry(address):
+# Подключение с перебором RPC
+def get_w3():
     for rpc in RPC_LIST:
         try:
             w3 = Web3(Web3.HTTPProvider(rpc))
-            if not w3.is_connected():
-                continue
-            contract = w3.eth.contract(address=SQD_CONTRACT, abi=MIN_ABI)
-            raw = contract.functions.balanceOf(address).call()
-            return round(raw / 1e18, 6)
-        except Exception as e:
-            if "429" in str(e) or "Too Many Requests" in str(e):
-                continue  # попробовать следующий RPC
-            print(f"[DEBUG] Ошибка для {address} через {rpc}: {e}")
-            return 0.0
-    print(f"[DEBUG] Все RPC недоступны для {address}")
-    return 0.0
+            if w3.is_connected():
+                return w3
+        except:
+            continue
+    raise Exception("❌ Не удалось подключиться ни к одному RPC!")
 
-def check_address(addr):
-    addr = to_checksum(addr)
-    if not addr:
-        return f"{addr};0.0"
-    balance = get_sqd_balance_with_retry(addr)
-    return f"{addr};{balance}"
+w3 = get_w3()
 
-def check_balances():
-    try:
-        with open("wallet_sqd.txt", "r") as f:
-            addresses = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        print("❌ Файл wallet_sqd.txt не найден.")
+def GAS_PRICE():
+    return min(max(w3.eth.gas_price, w3.to_wei(0.01, 'gwei')), w3.to_wei(3, 'gwei'))
+
+def get_eth_balance(address):
+    return w3.eth.get_balance(address)
+
+def get_token_balance(address):
+    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
+        {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
+         "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
+    ])
+    return contract.functions.balanceOf(address).call() // (10 ** TOKEN_DECIMALS)
+
+def send_tokens(private_key, sender, recipient):
+    token_balance = get_token_balance(sender)
+    eth_balance = get_eth_balance(sender)
+    eth_balance_ether = w3.from_wei(eth_balance, 'ether')
+
+    if token_balance <= 0:
+        print(f"⚠️ Пропущен {sender}: 0 SQD")
         return
 
-    print("Адрес;Баланс SQD")
+    gas_price = GAS_PRICE()
+    est_gas_cost = GAS_LIMIT * gas_price
 
-    with open("sqd_balances.txt", "w") as log_file:
-        log_file.write("Адрес;Баланс SQD\n")
+    if eth_balance < est_gas_cost:
+        print(f"❌ Недостаточно ETH на газ: {eth_balance_ether} ETH у {sender}")
+        return
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(check_address, addr) for addr in addresses]
+    contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
+        {"constant": False, "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}],
+         "name": "transfer", "outputs": [{"name": "", "type": "bool"}], "type": "function"}
+    ])
 
-            for future in as_completed(futures):
-                result = future.result()
-                print(result)
-                log_file.write(result + "\n")
+    nonce = w3.eth.get_transaction_count(sender)
+    amount = token_balance * (10 ** TOKEN_DECIMALS)
+
+    try:
+        est_gas = contract.functions.transfer(recipient, amount).estimate_gas({'from': sender})
+        tx = contract.functions.transfer(recipient, amount).build_transaction({
+            'from': sender,
+            'nonce': nonce,
+            'gas': est_gas,
+            'gasPrice': gas_price,
+            'chainId': CHAIN_ID
+        })
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        print(f"✅ Отправлено {token_balance} SQD: {w3.to_hex(tx_hash)}")
+    except Exception as e:
+        print(f"❌ Ошибка при отправке с {sender}: {e}")
+        return
+
+def main():
+    with open("addresses.txt", "r") as file:
+        lines = file.readlines()
+
+    for line in lines:
+        try:
+            sender, private_key, recipient = line.strip().split(";")
+            sender = w3.to_checksum_address(sender)
+            recipient = w3.to_checksum_address(recipient)
+            print(f"💰 {sender}: {get_token_balance(sender)} SQD")
+            send_tokens(private_key, sender, recipient)
+            time.sleep(2)
+        except Exception as e:
+            print(f"⚠️ Пропущено {line.strip()}: {e}")
 
 if __name__ == "__main__":
-    check_balances()
+    main()
