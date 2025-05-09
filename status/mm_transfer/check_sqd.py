@@ -58,7 +58,7 @@ def check_address(addr):
 # Основная функция: чтение адресов и запуск проверки
 def check_balances():
     try:
-        with open("wallet.txt", "r") as f:
+        with open("wallet_sqd.txt", "r") as f:
             addresses = [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
         print("❌ Файл wallet.txt не найден.")
