@@ -69,7 +69,7 @@ def check_balances():
     with open("sqd_balances.txt", "w") as log_file:
         log_file.write("Адрес;Баланс SQD\n")
 
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(check_address, addr) for addr in addresses]
 
             for future in as_completed(futures):
