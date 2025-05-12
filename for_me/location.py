@@ -1,11 +1,30 @@
 import requests
 
-ip = "8.8.8.8"  # замените на нужный IP
-response = requests.get(f"http://ip-api.com/json/{ip}")
-data = response.json()
+def get_my_ip():
+    # Получаем внешний IP текущей машины
+    response = requests.get('https://api.ipify.org?format=json')
+    return response.json()['ip']
 
-print(f"IP: {data['query']}")
-print(f"Country: {data['country']}")
-print(f"Region: {data['regionName']}")
-print(f"City: {data['city']}")
-print(f"ISP: {data['isp']}")
+def main():
+    user_input = input("Введите IP для поиска или нажмите Enter для определения вашего IP: ").strip()
+
+    if user_input == "":
+        ip = get_my_ip()
+        print(f"Ваш внешний IP: {ip}")
+    else:
+        ip = user_input
+
+    response = requests.get(f"http://ip-api.com/json/{ip}")
+    data = response.json()
+
+    if data['status'] == 'success':
+        print(f"IP: {data['query']}")
+        print(f"Страна: {data['country']}")
+        print(f"Регион: {data['regionName']}")
+        print(f"Город: {data['city']}")
+        print(f"Провайдер: {data['isp']}")
+    else:
+        print(f"❌ Ошибка: {data['message']}")
+
+if __name__ == "__main__":
+    main()
