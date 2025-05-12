@@ -1,3 +1,4 @@
+
 import requests
 
 def get_my_ip():
@@ -20,9 +21,6 @@ def main():
     if data['status'] == 'success':
         print(f"IP: {data['query']}")
         print(f"Страна: {data['country']}")
-        print(f"Регион: {data['regionName']}")
-        print(f"Город: {data['city']}")
-        print(f"Провайдер: {data['isp']}")
     else:
         print(f"❌ Ошибка: {data['message']}")
 
