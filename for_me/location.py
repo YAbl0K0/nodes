@@ -1,7 +1,5 @@
 import requests
 
-pip install requests
-
 def get_my_ip():
     # Получаем внешний IP текущей машины
     response = requests.get('https://api.ipify.org?format=json')
