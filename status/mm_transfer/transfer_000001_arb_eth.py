@@ -67,7 +67,7 @@ def main():
                 tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction) 
 
 
-                msg = f"✅ {AMOUNT_TO_SEND} ETH -> {address} | TX: {tx_hash.hex()}"
+                msg = f"✅ 0.00001 ETH -> {address}"
                 print(msg)
                 log.write(msg + "\n")
                 nonce += 1
