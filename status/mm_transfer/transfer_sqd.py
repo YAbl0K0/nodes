@@ -1,6 +1,5 @@
 from web3 import Web3
 import time
-import random
 
 # Список RPC для Arbitrum
 RPC_LIST = [
@@ -11,9 +10,9 @@ RPC_LIST = [
 CHAIN_ID = 42161
 GAS_LIMIT = 120000
 TOKEN_DECIMALS = 18
+MIN_SEND_AMOUNT = int(0.0001 * 10 ** TOKEN_DECIMALS)  # 0.0001 токенов в wei
 ERC20_CONTRACT_ADDRESS = "0x1337420dED5ADb9980CFc35f8f2B054ea86f8aB1"
 
-# Подключение с перебором RPC
 def get_w3():
     for rpc in RPC_LIST:
         try:
@@ -32,20 +31,20 @@ def GAS_PRICE():
 def get_eth_balance(address):
     return w3.eth.get_balance(address)
 
-def get_token_balance(address):
+def get_token_balance_raw(address):
     contract = w3.eth.contract(address=ERC20_CONTRACT_ADDRESS, abi=[
         {"constant": True, "inputs": [{"name": "", "type": "address"}], "name": "balanceOf",
          "outputs": [{"name": "", "type": "uint256"}], "type": "function"}
     ])
-    return contract.functions.balanceOf(address).call() // (10 ** TOKEN_DECIMALS)
+    return contract.functions.balanceOf(address).call()  # raw balance in wei
 
 def send_tokens(private_key, sender, recipient):
-    token_balance = get_token_balance(sender)
+    token_balance = get_token_balance_raw(sender)
     eth_balance = get_eth_balance(sender)
     eth_balance_ether = w3.from_wei(eth_balance, 'ether')
 
-    if token_balance <= 0:
-        print(f"⚠️ Пропущен {sender}: 0 SQD")
+    if token_balance < MIN_SEND_AMOUNT:
+        print(f"⚠️ Пропущен {sender}: {token_balance / 10 ** TOKEN_DECIMALS:.8f} SQD (< 0.0001)")
         return
 
     gas_price = GAS_PRICE()
@@ -61,7 +60,7 @@ def send_tokens(private_key, sender, recipient):
     ])
 
     nonce = w3.eth.get_transaction_count(sender)
-    amount = token_balance * (10 ** TOKEN_DECIMALS)
+    amount = token_balance  # отправляем весь доступный остаток
 
     try:
         est_gas = contract.functions.transfer(recipient, amount).estimate_gas({'from': sender})
@@ -74,10 +73,9 @@ def send_tokens(private_key, sender, recipient):
         })
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        print(f"✅ Отправлено {token_balance} SQD: {w3.to_hex(tx_hash)}")
+        print(f"✅ Отправлено {amount / 10 ** TOKEN_DECIMALS:.8f} SQD: {w3.to_hex(tx_hash)}")
     except Exception as e:
         print(f"❌ Ошибка при отправке с {sender}: {e}")
-        return
 
 def main():
     with open("addresses_sqd.txt", "r") as file:
@@ -88,7 +86,8 @@ def main():
             sender, private_key, recipient = line.strip().split(";")
             sender = w3.to_checksum_address(sender)
             recipient = w3.to_checksum_address(recipient)
-            print(f"💰 {sender}: {get_token_balance(sender)} SQD")
+            balance = get_token_balance_raw(sender)
+            print(f"💰 {sender}: {balance / 10 ** TOKEN_DECIMALS:.8f} SQD")
             send_tokens(private_key, sender, recipient)
             time.sleep(2)
         except Exception as e:
