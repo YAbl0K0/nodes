@@ -11,7 +11,7 @@ RPC_LIST = [
 
 CHAIN_ID = 42161
 AMOUNT_TO_SEND = 0.00001  # ETH
-GAS_LIMIT = 21000
+GAS_LIMIT = 35000
 ADDRESSES_FILE = "address_arb.txt"
 LOG_FILE = "transfer_log.txt"
 
