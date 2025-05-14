@@ -64,7 +64,8 @@ def main():
                 }
 
                 signed_tx = w3.eth.account.sign_transaction(tx, private_key)
-                tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+                tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction) 
+
 
                 msg = f"✅ {AMOUNT_TO_SEND} ETH -> {address} | TX: {tx_hash.hex()}"
                 print(msg)
