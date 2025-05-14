@@ -58,7 +58,8 @@ def main():
                     'to': w3.to_checksum_address(address),
                     'value': w3.to_wei(AMOUNT_TO_SEND, 'ether'),
                     'gas': GAS_LIMIT,
-                    'gasPrice': gas_price,
+                    'maxFeePerGas': int(gas_price * 1.2),
+                    'maxPriorityFeePerGas': w3.to_wei(0.003, 'gwei'),
                     'nonce': nonce,
                     'chainId': CHAIN_ID
                 }
