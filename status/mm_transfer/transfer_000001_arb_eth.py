@@ -47,7 +47,7 @@ def send_tx(w3, private_key, sender_address, address, nonce):
         signed_tx = w3.eth.account.sign_transaction(tx, private_key)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
-        msg = f"✅ 0.00001 ETH -> {address} | TX: {tx_hash.hex()}"
+        msg = f"✅ 0.00001 ETH -> {address}"
         with lock:
             print(msg)
             with open(LOG_FILE, "a") as log:
