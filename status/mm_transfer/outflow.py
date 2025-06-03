@@ -2,7 +2,8 @@ import requests
 import time
 import csv
 import os
-from requests.exceptions import ConnectionError
+import threading
+from requests.exceptions import ConnectionError, JSONDecodeError
 
 # Здесь указываем API ключи для каждой сети
 API_KEYS = {
@@ -26,43 +27,79 @@ API_URLS = {
 with open('1accaunts.txt', 'r') as f:
     wallets = [line.strip() for line in f if line.strip()]
 
-# Собираем данные
+os.makedirs('results', exist_ok=True)
+
+def process_wallet(chain, api_url, api_key, wallet):
+    csv_path = f'results/{chain}.csv'
+    lock = threading.Lock()
+
+    if chain == 'mantle':
+        print(f"Mantle: API пока не поддерживается для парсинга историй транзакций.")
+        return
+
+    try:
+        url_normal = f"{api_url}?module=account&action=txlist&address={wallet}&startblock=0&endblock=99999999&sort=asc&apikey={api_key}"
+        resp = requests.get(url_normal)
+        if resp.status_code != 200:
+            print(f"{chain} {wallet}: HTTP {resp.status_code} on normal txlist")
+            return
+        try:
+            data = resp.json()
+        except JSONDecodeError:
+            print(f"{chain} {wallet}: JSONDecodeError on normal txlist")
+            return
+
+        rows = []
+        if data.get('status') == '1':
+            for tx in data['result']:
+                if tx['from'].lower() == wallet.lower():
+                    rows.append([wallet, tx['hash'], tx['timeStamp'], tx['to'], 'Native', int(tx['value'])/10**18])
+
+        url_token = f"{api_url}?module=account&action=tokentx&address={wallet}&startblock=0&endblock=99999999&sort=asc&apikey={api_key}"
+        resp = requests.get(url_token)
+        if resp.status_code != 200:
+            print(f"{chain} {wallet}: HTTP {resp.status_code} on token txlist")
+            return
+        try:
+            data = resp.json()
+        except JSONDecodeError:
+            print(f"{chain} {wallet}: JSONDecodeError on token txlist")
+            return
+
+        if data.get('status') == '1':
+            for tx in data['result']:
+                if tx['from'].lower() == wallet.lower():
+                    decimals = int(tx['tokenDecimal']) if tx['tokenDecimal'] else 18
+                    value = int(tx['value']) / 10**decimals
+                    rows.append([wallet, tx['hash'], tx['timeStamp'], tx['to'], tx['tokenSymbol'], value])
+
+        with lock:
+            file_exists = os.path.isfile(csv_path)
+            with open(csv_path, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                if not file_exists:
+                    writer.writerow(['wallet', 'hash', 'timestamp', 'to', 'tokenSymbol', 'value'])
+                writer.writerows(rows)
+
+    except ConnectionError as e:
+        print(f"{chain} {wallet}: Connection error: {e}")
+    except Exception as e:
+        print(f"{chain} {wallet}: Unexpected error: {e}")
+
+threads = []
+
 for chain in API_URLS:
     print(f"Processing {chain}...")
     api_url = API_URLS[chain]
     api_key = API_KEYS[chain]
 
-    os.makedirs('results', exist_ok=True)
-    with open(f'results/{chain}.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['wallet', 'hash', 'timestamp', 'to', 'tokenSymbol', 'value'])
+    for wallet in wallets:
+        t = threading.Thread(target=process_wallet, args=(chain, api_url, api_key, wallet))
+        threads.append(t)
+        t.start()
+        time.sleep(0.05)
 
-        for wallet in wallets:
-            if chain in ['bsc', 'arbitrum', 'base', 'opbnb']:
-                try:
-                    url_normal = f"{api_url}?module=account&action=txlist&address={wallet}&startblock=0&endblock=99999999&sort=asc&apikey={api_key}"
-                    resp = requests.get(url_normal)
-                    data = resp.json()
-                    if data['status'] == '1':
-                        for tx in data['result']:
-                            if tx['from'].lower() == wallet.lower():
-                                writer.writerow([wallet, tx['hash'], tx['timeStamp'], tx['to'], 'Native', int(tx['value'])/10**18])
-                    time.sleep(0.2)
-
-                    url_token = f"{api_url}?module=account&action=tokentx&address={wallet}&startblock=0&endblock=99999999&sort=asc&apikey={api_key}"
-                    resp = requests.get(url_token)
-                    data = resp.json()
-                    if data['status'] == '1':
-                        for tx in data['result']:
-                            if tx['from'].lower() == wallet.lower():
-                                decimals = int(tx['tokenDecimal']) if tx['tokenDecimal'] else 18
-                                value = int(tx['value']) / 10**decimals
-                                writer.writerow([wallet, tx['hash'], tx['timeStamp'], tx['to'], tx['tokenSymbol'], value])
-                    time.sleep(0.2)
-                except ConnectionError as e:
-                    print(f"Connection error on {chain} wallet {wallet}: {e}")
-                    continue
-            elif chain == 'mantle':
-                print(f"Mantle: API пока не поддерживается для парсинга историй транзакций.")
+for t in threads:
+    t.join()
 
 print("\nСбор данных завершён. Результаты в папке 'results'.")
