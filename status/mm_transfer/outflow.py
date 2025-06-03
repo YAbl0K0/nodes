@@ -23,7 +23,7 @@ API_URLS = {
 }
 
 # Читаем кошельки
-with open('wallets.txt', 'r') as f:
+with open('1accaunts.txt', 'r') as f:
     wallets = [line.strip() for line in f if line.strip()]
 
 # Собираем данные
