@@ -3,7 +3,6 @@
 
 import os
 import time
-import random
 from decimal import Decimal, getcontext
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -112,9 +111,13 @@ def estimate_fee(params, addr):
 def do_claim(pk: str):
     acct: LocalAccount = Account.from_key(bytes.fromhex(pk))
     addr = acct.address
+
+    # --- fetch claim params ---
     try:
         params = fetch_claim(addr)
     except Exception as e:
+        if "500" in str(e):
+            return f"[{addr}] ❌ Нет аллокации (500 Server Error)"
         return f"[{addr}] ❌ Fetch fail: {e}"
 
     ttl = params["expireAt"] - int(time.time())
@@ -122,20 +125,27 @@ def do_claim(pk: str):
     if ttl < TTL_WARN:
         print(f"[{addr}] ⚠ TTL low: {ttl}s")
 
-    # gas & balance check
+    # --- simulate to detect Already claimed ---
     try:
-        gas_est, gas_price, fee_bnb, fee_usd = estimate_fee(params, addr)
-    except Exception as e:
-        return f"[{addr}] ❌ Gas check fail: {e}"
+        contract.functions.claim(
+            params["index"], params["amount"], params["expireAt"],
+            bytes.fromhex(params["signature"][2:])
+        ).call({"from": addr})
+    except ContractLogicError as e:
+        if "Already claimed" in str(e):
+            return f"[{addr}] 🔄 Уже клеймлено"
+        return f"[{addr}] ❌ Simulate fail: {e}"
 
+    # --- gas check ---
+    gas_est, gas_price, fee_bnb, fee_usd = estimate_fee(params, addr)
     balance = Decimal(w3.eth.get_balance(addr)) / Decimal(10**18)
     if balance < fee_bnb:
-        return f"[{addr}] ⚠ Недостаточно BNB для газа. Баланс={balance}, нужно≈{fee_bnb:.6f}"
+        return f"[{addr}] ⚠ Недостаточно BNB. Баланс={balance}, нужно≈{fee_bnb:.6f}"
 
     if fee_usd > MAX_TX_FEE_USD:
         return f"[{addr}] ❌ Fee ${fee_usd:.4f} > limit ${MAX_TX_FEE_USD}"
 
-    # send tx
+    # --- send ---
     try:
         tx = contract.functions.claim(
             params["index"], params["amount"], params["expireAt"],
@@ -150,23 +160,32 @@ def do_claim(pk: str):
         signed = acct.sign_transaction(tx)
         txh = w3.eth.send_raw_transaction(signed.rawTransaction)
         rcpt = w3.eth.wait_for_transaction_receipt(txh, timeout=WAIT_TIMEOUT)
-        return f"[{addr}] ✅ {amt} MTP | tx={txh.hex()} | gasUsed={rcpt.gasUsed}"
+        if rcpt.status == 1:
+            return f"[{addr}] ✅ Клейм успешен: {amt} MTP | tx={txh.hex()} | gasUsed={rcpt.gasUsed}"
+        else:
+            return f"[{addr}] ❌ Tx reverted on-chain | tx={txh.hex()}"
     except Exception as e:
         return f"[{addr}] ❌ Send failed: {e}"
 
 def main():
     keys = load_keys(KEYS_FILE)
     results = []
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
         futs = {ex.submit(do_claim, pk): pk for pk in keys}
         for fut in as_completed(futs):
-            results.append(fut.result())
-            print(results[-1])
+            res = fut.result()
+            results.append(res)
+            print(res)
 
-    # save log
-    with open("results.log", "w") as f:
+    # write logs
+    with open("results.log", "w") as f, open("success.log", "w") as fs, open("errors.log", "w") as fe:
         for r in results:
             f.write(r + "\n")
+            if "✅" in r:
+                fs.write(r + "\n")
+            else:
+                fe.write(r + "\n")
 
     print("\n=== SUMMARY ===")
     for r in results:
