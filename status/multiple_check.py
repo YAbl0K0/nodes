@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Check-only tool for Multipass Airdrop (Multiple.cc)
+Outputs lines in the format:
+    private_key;address;amountMTP
+If there is no allocation (API 500 or missing data) -> amount = 0
+"""
 
 import os
 import sys
@@ -17,7 +23,7 @@ RAW_COOKIE = os.getenv("CLAIM_COOKIE")
 KEYS_FILE = os.getenv("KEYS_FILE", "keys.txt")
 MAX_WORKERS = int(os.getenv("MAX_WORKERS", "8"))
 
-HEADERS = {"User-Agent": "claim-check/1.0"}
+HEADERS = {"User-Agent": "claim-check/1.1"}
 if AUTH_HEADER:
     HEADERS["Authorization"] = AUTH_HEADER
 if RAW_COOKIE:
@@ -53,10 +59,9 @@ def addr_from_pk(pk: str) -> str:
     return acct.address
 
 def fetch_amount(addr: str) -> int:
-    """Return reward_amount as int (wei). If no allocation -> 0"""
+    """Return reward_amount in WEI. If no allocation -> 0"""
     try:
         r = session.get(CLAIM_API_URL, params={"user_address": addr}, headers=HEADERS, timeout=20)
-        # Treat 500 as "no allocation"
         if r.status_code == 500:
             return 0
         r.raise_for_status()
@@ -70,8 +75,9 @@ def fetch_amount(addr: str) -> int:
 
 def process_key(pk: str) -> str:
     addr = addr_from_pk(pk)
-    amount = fetch_amount(addr)
-    return f"{pk};{addr};{amount}"
+    amount_wei = fetch_amount(addr)
+    amount_mtp = int(amount_wei // 10**18)  # округляем до целых токенов
+    return f"{pk};{addr};{amount_mtp}"
 
 def main():
     keys = load_keys(KEYS_FILE)
