@@ -22,7 +22,7 @@ try:
         Bip39Languages, Bip39MnemonicValidator, Bip39SeedGenerator,
         Bip44, Bip44Coins, Bip44Changes
     )
-except Exception as e:
+except Exception:
     sys.stderr.write("Відсутні залежності. Встановіть: pip install bip-utils eth-account\n")
     raise SystemExit(1)
 
@@ -30,47 +30,35 @@ def sanitize(m: str) -> str:
     """Нормалізуємо пробіли та приводимо до lower-case (BIP-39 слова нижнім регістром)."""
     return " ".join(m.strip().lower().split())
 
-def first_three_words(mnemonic: str) -> str:
-    """Повертає перші 3 слова мнемоніки (для безпечного логування)."""
+def first_word(mnemonic: str) -> str:
+    """Повертає тільки перше слово мнемоніки."""
     parts = mnemonic.split()
-    return " ".join(parts[:3]) if parts else ""
+    return parts[0] if parts else ""
 
 def detect_language_or_raise(mnemonic: str):
-    """
-    Автовизначає мову словника BIP-39 шляхом перебору підтримуваних мов.
-    Повертає Bip39Languages.* або піднімає ValueError.
-    """
+    """Автовизначає мову словника BIP-39."""
     for lang in Bip39Languages:
         try:
             if Bip39MnemonicValidator(lang).IsValid(mnemonic):
                 return lang
         except Exception:
-            # про всяк випадок ігноруємо екзотичні збої валідатора
             continue
     raise ValueError("Unsupported language or invalid BIP39 mnemonic")
 
 def derive_eth_address(mnemonic: str, passphrase: str = "") -> str:
-    """
-    Деривація адреси для Ethereum з використанням BIP44 (m/44'/60'/0'/0/0).
-    Повертає адресу у форматі 0x...
-    (Приватний ключ НЕ повертається і не виводиться)
-    """
-    # Визначимо мову словника (кине помилку, якщо мнемоніка невалідна)
+    """Деривація адреси для Ethereum з використанням BIP44 (m/44'/60'/0'/0/0)."""
     _ = detect_language_or_raise(mnemonic)
-
     seed = Bip39SeedGenerator(mnemonic).Generate(passphrase)
     bip44 = Bip44.FromSeed(seed, Bip44Coins.ETHEREUM)
     acct = bip44.Purpose().Coin().Account(0).Change(Bip44Changes.CHAIN_EXT).AddressIndex(0)
-
-    priv_hex = acct.PrivateKey().Raw().ToHex()  # hex без '0x'
-    # Безпечно передаємо bytes до eth_account
+    priv_hex = acct.PrivateKey().Raw().ToHex()
     eth_acct = Account.from_key(bytes.fromhex(priv_hex))
     return eth_acct.address
 
 def main(input_file="mnemonics.txt", output_file="wallets.csv"):
     with open(output_file, "w", newline="", encoding="utf-8") as out_f:
         writer = csv.writer(out_f, delimiter=';')
-        writer.writerow(["index", "first_3_words", "address"])
+        writer.writerow(["first_word", "address"])
         try:
             with open(input_file, "r", encoding="utf-8") as f:
                 lines = f.readlines()
@@ -78,31 +66,30 @@ def main(input_file="mnemonics.txt", output_file="wallets.csv"):
             print(f"Файл {input_file} не знайдено.", file=sys.stderr)
             return
 
-        for i, raw in enumerate(lines, start=1):
+        for raw in lines:
             m = sanitize(raw)
             if not m or m.startswith("#"):
                 continue
             try:
                 addr = derive_eth_address(m)
-                writer.writerow([i, first_three_words(m), addr])
-                # також виводимо в stdout лише індекс, перші 3 слова і адресу (для зручності)
-                print(f"{i};{first_three_words(m)};{addr}")
+                writer.writerow([first_word(m), addr])
+                print(f"{first_word(m)};{addr}")
             except Exception as e:
                 err = f"ERROR: {e}"
-                writer.writerow([i, first_three_words(m), err])
-                print(f"{i};{first_three_words(m)};{err}", file=sys.stderr)
+                writer.writerow([first_word(m), err])
+                print(f"{first_word(m)};{err}", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
 PYEOF
 
-# Запускаємо скрипт (вивід — адреси; приватні ключі не виводяться)
+# Запускаємо скрипт
 python3 check_wallets.py
 
-# Даємо безпечні права на CSV (тільки для власника)
+# Безпечні права на CSV
 chmod 600 wallets.csv || true
 
-# Видаляємо тимчасовий python-скрипт
+# Прибираємо тимчасовий python-скрипт
 rm -f check_wallets.py
 
-echo "Готово — результат у wallets.csv (формат: index;first_3_words;address)."
+echo "Готово — результат у wallets.csv (формат: first_word;address)."
