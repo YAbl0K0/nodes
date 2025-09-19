@@ -19,8 +19,7 @@ import sys
 try:
     from eth_account import Account
     from bip_utils import (
-        Bip39MnemonicValidator,
-        Bip39SeedGenerator,
+        Bip39Languages, Bip39MnemonicValidator, Bip39SeedGenerator,
         Bip44, Bip44Coins, Bip44Changes
     )
 except Exception as e:
@@ -28,13 +27,27 @@ except Exception as e:
     raise SystemExit(1)
 
 def sanitize(m: str) -> str:
-    """Нормалізуємо пробіли в рядку мнемоніки."""
-    return " ".join(m.strip().split())
+    """Нормалізуємо пробіли та приводимо до lower-case (BIP-39 слова нижнім регістром)."""
+    return " ".join(m.strip().lower().split())
 
 def first_three_words(mnemonic: str) -> str:
     """Повертає перші 3 слова мнемоніки (для безпечного логування)."""
     parts = mnemonic.split()
     return " ".join(parts[:3]) if parts else ""
+
+def detect_language_or_raise(mnemonic: str):
+    """
+    Автовизначає мову словника BIP-39 шляхом перебору підтримуваних мов.
+    Повертає Bip39Languages.* або піднімає ValueError.
+    """
+    for lang in Bip39Languages:
+        try:
+            if Bip39MnemonicValidator(lang).IsValid(mnemonic):
+                return lang
+        except Exception:
+            # про всяк випадок ігноруємо екзотичні збої валідатора
+            continue
+    raise ValueError("Unsupported language or invalid BIP39 mnemonic")
 
 def derive_eth_address(mnemonic: str, passphrase: str = "") -> str:
     """
@@ -42,9 +55,8 @@ def derive_eth_address(mnemonic: str, passphrase: str = "") -> str:
     Повертає адресу у форматі 0x...
     (Приватний ключ НЕ повертається і не виводиться)
     """
-    # Валідація BIP39
-    if not Bip39MnemonicValidator(mnemonic).Validate():
-        raise ValueError("Невалідна BIP39 мнемоніка")
+    # Визначимо мову словника (кине помилку, якщо мнемоніка невалідна)
+    _ = detect_language_or_raise(mnemonic)
 
     seed = Bip39SeedGenerator(mnemonic).Generate(passphrase)
     bip44 = Bip44.FromSeed(seed, Bip44Coins.ETHEREUM)
@@ -73,7 +85,7 @@ def main(input_file="mnemonics.txt", output_file="wallets.csv"):
             try:
                 addr = derive_eth_address(m)
                 writer.writerow([i, first_three_words(m), addr])
-                # також виводимо в stdout лише індекс і адресу (для зручності)
+                # також виводимо в stdout лише індекс, перші 3 слова і адресу (для зручності)
                 print(f"{i};{first_three_words(m)};{addr}")
             except Exception as e:
                 err = f"ERROR: {e}"
