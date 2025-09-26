@@ -12,8 +12,8 @@ RPC_URLS = {
 
 # Параметры
 WALLET_FILE = "wallet.txt"
-MAX_WORKERS = 10   # <- можно уменьшить/увеличить при необходимости
-REQUEST_DELAY = 0.01  # задержка между запросами в потоке (опционально)
+MAX_WORKERS = 10
+REQUEST_DELAY = 0.01
 
 # Подключаемся к RPC (создаём Web3 объект для OG)
 w3_networks = {}
@@ -25,13 +25,13 @@ for name, url in RPC_URLS.items():
             chain = w3.eth.chain_id
         except Exception:
             pass
-        print(f"[OK] {name} -> {url} (chainId={chain})")
+        print(f"[OK] {name} -> {url} (chainId={chain})", file=sys.stderr)
         w3_networks[name] = w3
     else:
-        print(f"[WARN] Не удалось подключиться к {name} -> {url} (будет пропущена)")
+        print(f"[WARN] Не удалось подключиться к {name} -> {url}", file=sys.stderr)
 
 if not w3_networks:
-    print("❌ Нет доступных RPC. Проверь RPC_URLS.")
+    print("❌ Нет доступных RPC. Проверь RPC_URLS.", file=sys.stderr)
     sys.exit(1)
 
 # Вспомогательные функции
@@ -49,7 +49,7 @@ def get_eth_balance(w3: Web3, address: str):
     try:
         bal = w3.eth.get_balance(address)
         return float(w3.fromWei(bal, "ether"))
-    except Exception:
+    except Exception as e:
         return None
 
 def check_address_balances(raw_address: str, networks):
@@ -80,12 +80,22 @@ def check_balances():
         with open(WALLET_FILE, "r", encoding="utf-8") as f:
             lines = [ln for ln in f.readlines() if ln.strip()]
     except FileNotFoundError:
-        print(f"❌ {WALLET_FILE} не найден")
+        print(f"❌ {WALLET_FILE} не найден", file=sys.stderr)
         return
 
-    # Жёстко: только OG
+    # проверим, есть ли хоть один валидный адрес в файле
+    valid_count = 0
+    for ln in lines:
+        if normalize_address(ln):
+            valid_count += 1
+    if valid_count == 0:
+        print("❌ В wallet.txt не найдено валидных 0x-адресов.", file=sys.stderr)
+        return
+
     selected_networks = ["OG"]
-    print("Адрес;" + ";".join(selected_networks))
+
+    # печатаем только CSV в stdout (чтобы можно было редиректить чисто в файл)
+    print("Address;" + ";".join(selected_networks))
 
     # параллельная обработка
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
