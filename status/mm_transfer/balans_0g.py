@@ -5,22 +5,17 @@ import time
 from web3 import Web3
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# --- Вставь сюда свои RPC (добавь "OG": "https://...") ---
+# --- Жёстко только OG (вставьте свой RPC) ---
 RPC_URLS = {
-    "OG": "https://16601.rpc.thirdweb.com",
-    "Mantle": "https://rpc.mantle.xyz",
-    "OpBNB": "https://opbnb-mainnet-rpc.bnbchain.org",
-    "Arbitrum": "https://arb1.arbitrum.io/rpc",
-    "BNB": "https://bsc-dataseed.binance.org",
-    # "Dill": "https://rpc-alps.dill.xyz"
+    "OG": "https://16601.rpc.thirdweb.com"
 }
 
 # Параметры
 WALLET_FILE = "wallet.txt"
-MAX_WORKERS = 10   # <- уменьшил по умолчанию (избегай 100)
+MAX_WORKERS = 10   # <- можно уменьшить/увеличить при необходимости
 REQUEST_DELAY = 0.01  # задержка между запросами в потоке (опционально)
 
-# Подключаемся к RPC (создаём Web3 объекты)
+# Подключаемся к RPC (создаём Web3 объект для OG)
 w3_networks = {}
 for name, url in RPC_URLS.items():
     w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 10}))
@@ -54,7 +49,7 @@ def get_eth_balance(w3: Web3, address: str):
     try:
         bal = w3.eth.get_balance(address)
         return float(w3.fromWei(bal, "ether"))
-    except Exception as e:
+    except Exception:
         return None
 
 def check_address_balances(raw_address: str, networks):
@@ -83,28 +78,13 @@ def check_balances():
     # читаем и фильтруем адреса
     try:
         with open(WALLET_FILE, "r", encoding="utf-8") as f:
-            lines = f.readlines()
+            lines = [ln for ln in f.readlines() if ln.strip()]
     except FileNotFoundError:
         print(f"❌ {WALLET_FILE} не найден")
         return
 
-    # диалог выбора сетей (можно убрать и жестко задать список)
-    print("Выберите сеть для вывода баланса:")
-    print("1 - Все доступные сети")
-    for i, network in enumerate(list(w3_networks.keys()), start=2):
-        print(f"{i} - {network}")
-    choice = input("Введите номер сети: ").strip()
-
-    if choice == "1":
-        selected_networks = list(w3_networks.keys())
-    else:
-        try:
-            idx = int(choice) - 2
-            selected_networks = [list(w3_networks.keys())[idx]]
-        except Exception:
-            print("Некорректно — выбраны все сети")
-            selected_networks = list(w3_networks.keys())
-
+    # Жёстко: только OG
+    selected_networks = ["OG"]
     print("Адрес;" + ";".join(selected_networks))
 
     # параллельная обработка
