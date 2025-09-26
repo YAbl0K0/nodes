@@ -1,137 +1,119 @@
 #!/usr/bin/env python3
-import json
+import sys
+import re
 import time
 from web3 import Web3
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Список RPC для сети OG (пробуем по порядку)
-OG_RPCS = [
-    "https://16601.rpc.thirdweb.com",      # публичный (может требовать ключ)
-    "https://evmrpc-testnet.0g.ai",        # публичный вариант
-    # Добавь сюда свой RPC, если есть (например QuickNode / Ankr / Alchemy)
-    # "https://your-rpc.example"
-]
-
-# Минимальный ERC-20 ABI (balanceOf, decimals, symbol)
-ERC20_ABI = json.loads("""[
-    {"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"decimals","outputs":[{"name":"","type":"uint8"}],"type":"function"},
-    {"constant":true,"inputs":[],"name":"symbol","outputs":[{"name":"","type":"string"}],"type":"function"}
-]""")
-
-# При необходимости укажи адреса контрактов токенов на OG (или оставь пустым)
-TOKEN_CONTRACTS = {
-    "OG": [
-        # "0xTokenAddress1",
-        # "0xTokenAddress2"
-    ]
+# --- Вставь сюда свои RPC (добавь "OG": "https://...") ---
+RPC_URLS = {
+    "OG": "https://16601.rpc.thirdweb.com",
+    "Mantle": "https://rpc.mantle.xyz",
+    "OpBNB": "https://opbnb-mainnet-rpc.bnbchain.org",
+    "Arbitrum": "https://arb1.arbitrum.io/rpc",
+    "BNB": "https://bsc-dataseed.binance.org",
+    # "Dill": "https://rpc-alps.dill.xyz"
 }
 
-# Путь к файлу со списком адресов (по одному адресу на строку)
+# Параметры
 WALLET_FILE = "wallet.txt"
+MAX_WORKERS = 10   # <- уменьшил по умолчанию (избегай 100)
+REQUEST_DELAY = 0.01  # задержка между запросами в потоке (опционально)
 
-def pick_working_provider(rpc_list, timeout=5):
-    """Попробовать по порядку RPC и вернуть первый рабочий Web3 провайдер."""
-    for rpc in rpc_list:
+# Подключаемся к RPC (создаём Web3 объекты)
+w3_networks = {}
+for name, url in RPC_URLS.items():
+    w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 10}))
+    if w3.is_connected():
+        chain = None
         try:
-            w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": timeout}))
-            if w3.is_connected():
-                # проверим chainId (опционально)
-                try:
-                    cid = w3.eth.chain_id
-                except Exception:
-                    cid = None
-                return w3, rpc, cid
+            chain = w3.eth.chain_id
         except Exception:
-            continue
-    return None, None, None
+            pass
+        print(f"[OK] {name} -> {url} (chainId={chain})")
+        w3_networks[name] = w3
+    else:
+        print(f"[WARN] Не удалось подключиться к {name} -> {url} (будет пропущена)")
 
-def to_checksum(addr):
+if not w3_networks:
+    print("❌ Нет доступных RPC. Проверь RPC_URLS.")
+    sys.exit(1)
+
+# Вспомогательные функции
+def normalize_address(line: str):
+    m = re.search(r'(0x[a-fA-F0-9]{40})', line)
+    return m.group(1) if m else None
+
+def to_checksum(address: str):
     try:
-        return Web3.toChecksumAddress(addr)
+        return Web3.toChecksumAddress(address)
     except Exception:
         return None
 
-def get_native_balance(w3, addr):
+def get_eth_balance(w3: Web3, address: str):
     try:
-        bal = w3.eth.get_balance(addr)
-        # Web3.fromWei is module-level; можно использовать Web3.fromWei
-        return Web3.fromWei(bal, 'ether')
+        bal = w3.eth.get_balance(address)
+        return float(w3.fromWei(bal, "ether"))
     except Exception as e:
-        print(f"  ❌ Ошибка получения нативного баланса: {e}")
         return None
 
-def get_token_balance(w3, token_addr, user_addr):
-    try:
-        token_addr_cs = to_checksum(token_addr)
-        if not token_addr_cs:
-            return None, None
-        contract = w3.eth.contract(address=token_addr_cs, abi=ERC20_ABI)
-        raw = contract.functions.balanceOf(user_addr).call()
-        # Попробуем получить decimals и symbol (могут провалиться)
-        try:
-            decimals = contract.functions.decimals().call()
-        except Exception:
-            decimals = 18
-        try:
-            symbol = contract.functions.symbol().call()
-        except Exception:
-            symbol = "ERC20"
-        human = raw / (10 ** decimals) if decimals is not None else raw
-        return human, symbol
-    except Exception as e:
-        # не падаем — просто возвращаем None
-        return None, None
-
-def load_addresses(path):
-    with open(path, "r", encoding="utf-8") as f:
-        lines = [l.strip() for l in f if l.strip()]
-    return lines
-
-def main():
-    print("🔎 Ищем рабочий RPC для OG...")
-    w3, rpc_used, chain_id = pick_working_provider(OG_RPCS, timeout=6)
-    if not w3:
-        print("❌ Не удалось подключиться ни к одному из RPC. Добавь рабочий RPC в OG_RPCS.")
-        return
-
-    print(f"✅ Подключено к RPC: {rpc_used} (chainId={chain_id})\n")
-
-    try:
-        addresses = load_addresses(WALLET_FILE)
-    except FileNotFoundError:
-        print(f"❌ Файл {WALLET_FILE} не найден. Создай файл с адресами (по одному на строку).")
-        return
-
-    if not addresses:
-        print("❌ Список адресов пуст.")
-        return
-
-    # Заголовок вывода
-    print("Адрес; Нативный (OG); Токены (если есть)")
-    for a in addresses:
-        cs = to_checksum(a)
-        if not cs:
-            print(f"{a}; ERROR_CHECKSUM; -")
+def check_address_balances(raw_address: str, networks):
+    addr = normalize_address(raw_address.strip())
+    if not addr:
+        return None
+    cs = to_checksum(addr)
+    if not cs:
+        return None
+    out = [cs]
+    for net in networks:
+        w3 = w3_networks.get(net)
+        if not w3:
+            out.append("ERR_RPC")
             continue
-
-        native = get_native_balance(w3, cs)
-        if native is None:
-            native_str = "ERR"
+        bal = get_eth_balance(w3, cs)
+        if bal is None:
+            out.append("ERR")
         else:
-            # native может быть Decimal/float; форматируем красиво
-            native_str = f"{float(native):.18f}".rstrip('0').rstrip('.')  # убираем лишние нули
+            out.append(f"{bal:.6f}")
+        if REQUEST_DELAY:
+            time.sleep(REQUEST_DELAY)
+    return ";".join(out)
 
-        tokens_out = []
-        for tok in TOKEN_CONTRACTS.get("OG", []):
-            bal, sym = get_token_balance(w3, tok, cs)
-            if bal is None:
-                continue
-            # фильтр нулей (порог > 0)
-            if bal and float(bal) > 0:
-                tokens_out.append(f"{bal} {sym}")
+def check_balances():
+    # читаем и фильтруем адреса
+    try:
+        with open(WALLET_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"❌ {WALLET_FILE} не найден")
+        return
 
-        tokens_txt = ", ".join(tokens_out) if tokens_out else "Нет токенов"
-        print(f"{cs}; {native_str}; {tokens_txt}")
+    # диалог выбора сетей (можно убрать и жестко задать список)
+    print("Выберите сеть для вывода баланса:")
+    print("1 - Все доступные сети")
+    for i, network in enumerate(list(w3_networks.keys()), start=2):
+        print(f"{i} - {network}")
+    choice = input("Введите номер сети: ").strip()
+
+    if choice == "1":
+        selected_networks = list(w3_networks.keys())
+    else:
+        try:
+            idx = int(choice) - 2
+            selected_networks = [list(w3_networks.keys())[idx]]
+        except Exception:
+            print("Некорректно — выбраны все сети")
+            selected_networks = list(w3_networks.keys())
+
+    print("Адрес;" + ";".join(selected_networks))
+
+    # параллельная обработка
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = [executor.submit(check_address_balances, ln, selected_networks) for ln in lines]
+        for fut in as_completed(futures):
+            res = fut.result()
+            if res:
+                print(res)
 
 if __name__ == "__main__":
-    main()
+    check_balances()
