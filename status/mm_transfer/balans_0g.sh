@@ -5,7 +5,8 @@ set -euo pipefail
 RPC="${RPC:-https://evmrpc.0g.ai}"   # можно переопределить: export RPC="https://your-0g-rpc"
 FILE="${1:-addresses.txt}"           # входной txt: по одному адресу в строке
 OUT="${OUT:-balances.csv}"           # файл результата
-CONCURRENCY="${CONCURRENCY:-8}"      # параллелизм: export CONCURRENCY=16
+ERRLOG="${ERRLOG:-errors.log}"       # файл ошибок
+CONCURRENCY="${CONCURRENCY:-10}"      # параллелизм: export CONCURRENCY=16
 TIMEOUT="${TIMEOUT:-15}"             # таймаут curl (сек)
 RETRIES="${RETRIES:-3}"              # количество ретраев при сетевых ошибках
 
@@ -15,44 +16,62 @@ command -v jq   >/dev/null || { echo "Нужен jq (sudo apt-get install jq -y)
 command -v python3 >/dev/null || { echo "Нужен python3"; exit 1; }
 [[ -f "$FILE" ]] || { echo "Файл с адресами не найден: $FILE"; exit 1; }
 
-# === Хедер CSV ===
-echo "Address;Balance_OG;Balance_Wei;Hex;Status" > "$OUT"
+# очистим прошлый лог ошибок
+: > "$ERRLOG"
 
-# === Функция запроса одного адреса ===
+# === Хедер CSV ===
+echo "Address;Balance_OG" > "$OUT"
+
 query_one() {
   local addr="$1"
-  # уберём пробелы/табуляции
+  local rpc="$2"
+  local timeout="$3"
+  local retries="$4"
+  local errlog="$5"
+
+  # нормализация строки
   addr="$(echo -n "$addr" | tr -d '[:space:]')"
   [[ -z "$addr" ]] && return 0
-  [[ "$addr" != 0x* ]] && { echo "WARN: пропуск строки (непохоже на EVM адрес): '$addr'" >&2; return 0; }
+  if [[ "$addr" != 0x* ]]; then
+    printf "%s\n" "WARN: пропуск (не EVM-адрес): '$addr'" >&2
+    printf "%s;%s\n" "$addr" "ERROR"    # фиксируем в CSV как ошибку
+    printf "[INVALID] %s\n" "$addr" >>"$errlog"
+    return 0
+  fi
 
-  local i=0 hex status="ok"
+  local i=0 hex=""
   while :; do
     i=$((i+1))
-    hex=$(curl -sS --max-time "$TIMEOUT" "$RPC" \
+    # запрос eth_getBalance
+    hex=$(curl -sS --max-time "$timeout" "$rpc" \
       -H "content-type: application/json" \
       -d '{"jsonrpc":"2.0","id":1,"method":"eth_getBalance","params":["'"$addr"'","latest"]}' \
       | jq -r '.result // empty') || true
 
-    if [[ -n "$hex" && "$hex" != "0x" ]]; then
+    # успех, если вернулся непустой hex (в том числе "0x0...")
+    if [[ -n "$hex" ]]; then
       break
     fi
 
-    if (( i >= RETRIES )); then
-      status="error"
-      [[ -z "$hex" ]] && hex="0x"
-      break
+    # ретраи исчерпаны — ошибка
+    if (( i >= retries )); then
+      printf "%s\n" "ERROR: не удалось получить баланс для $addr (после $retries попыток)" >&2
+      printf "[RPC_ERROR] %s\n" "$addr" >>"$errlog"
+      printf "%s;%s\n" "$addr" "ERROR"
+      return 0
     fi
     sleep 0.4
   done
 
-  # Переводим в wei и OG (18 знаков)
-  # (делаем устойчиво: если пустой/0x — это 0)
+  # конвертация hex→wei→OG (18 знаков)
   local wei og
   wei=$(python3 - "$hex" <<'PY'
 import sys
 x=sys.argv[1]
-v=int(x,16) if x and x!="0x" else 0
+try:
+    v=int(x,16) if x and x!="0x" else 0
+except Exception:
+    v=0
 print(v)
 PY
 )
@@ -65,17 +84,16 @@ print((Decimal(w)/Decimal(10**18)).normalize())
 PY
 )
 
-  # Пишем строку CSV (адрес;OG;wei;hex;статус)
-  echo "$addr;$og;$wei;$hex;$status"
+  printf "%s;%s\n" "$addr" "$og"
 }
 
 export -f query_one
-export RPC TIMEOUT RETRIES
+export RPC TIMEOUT RETRIES ERRLOG
 
 # === Запуск в несколько потоков ===
-# берём непустые строки и не-комментарии
 grep -v '^[[:space:]]*$' "$FILE" | grep -v '^[[:space:]]*#' \
-  | xargs -I{} -P "$CONCURRENCY" bash -c 'query_one "$@"' _ '{}' \
+  | xargs -I{} -P "$CONCURRENCY" bash -c 'query_one "$@"' _ '{}' "$RPC" "$TIMEOUT" "$RETRIES" "$ERRLOG" \
   >> "$OUT"
 
 echo "Готово: $OUT"
+echo "Лог ошибок (если были): $ERRLOG"
