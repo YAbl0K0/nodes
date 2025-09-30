@@ -452,8 +452,9 @@ def main():
         delta   = x_after - x_before
         sum_sent = sum(r[4] for r in results)
         logging.info(f"[FINAL] Баланс Х ПОСЛЕ: {x_after} wei | ΔХ={delta}, сумма отправленного={sum_sent}")
-        if delta < sum_sent:
-            die(f"Несовпадение итоговой дельты: ΔХ={delta} < сумме отправленного={sum_sent}")
+        if delta != sum_sent:
+            die(f"Несовпадение итоговой дельты: ΔХ={delta} != сумме отправленного={sum_sent}")
+
 
     logging.info("Все переводы выполнены успешно (final check).")
     print(f"OK. Логи: {args.log} | CSV: {args.out_csv}")
