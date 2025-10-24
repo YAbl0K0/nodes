@@ -12,11 +12,11 @@
 
 import argparse, csv, logging, os, subprocess, sys, tempfile
 from decimal import Decimal
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from web3 import Web3
-from eth_account import Account
+from eth_account import Account  # noqa: F401 (используется через Web3.account)
 from bip_utils import Bip39SeedGenerator, Bip39MnemonicValidator, Bip44, Bip44Coins, Bip44Changes
 
 LOG_FMT = "%(asctime)s | %(levelname)s | %(message)s"
@@ -68,9 +68,19 @@ def prompt_mode_interactive() -> str:
 
 # ---------------- деривация ----------------
 
+def normalize_mnemonic(m: str) -> str:
+    # убираем лишние пробелы, табы, множественные пробелы
+    return " ".join(m.strip().split())
+
+def validate_mnemonic_length_and_checksum(m: str, allowed_word_counts: Set[int]) -> None:
+    words = m.split(" ")
+    if len(words) not in allowed_word_counts:
+        raise ValueError(f"Недопустимое число слов: {len(words)} (допустимо: {sorted(allowed_word_counts)})")
+    if not Bip39MnemonicValidator(m).Validate():
+        raise ValueError("Невалидная сид-фраза (BIP39 checksum/wordlist)")
+
 def derive_eth_from_mnemonic(mnemonic: str, index: int = 0) -> Tuple[str, str]:
-    if not Bip39MnemonicValidator(mnemonic).Validate():
-        raise ValueError("Невалидная сид-фраза")
+    # Предполагается, что mnemonic уже прошёл validate_mnemonic_length_and_checksum()
     seed = Bip39SeedGenerator(mnemonic).Generate()
     ctx = Bip44.FromSeed(seed, Bip44Coins.ETHEREUM)
     node = ctx.Purpose().Coin().Account(0).Change(Bip44Changes.CHAIN_EXT).AddressIndex(index)
@@ -258,6 +268,15 @@ def send_job_final(w3: Web3, recipient: str, mnemonic: str, index: int,
 
 # --------------- main ----------------
 
+def parse_allowed_words(raw: str) -> Set[int]:
+    try:
+        items = {int(x) for x in raw.split(",") if x.strip()}
+    except Exception:
+        raise ValueError("--allowed-words должен быть вида '12,24' (целые, через запятую)")
+    if not items:
+        raise ValueError("Пустой список в --allowed-words")
+    return items
+
 def main():
     ap = argparse.ArgumentParser(
         description="U→X для 0G (native). Балансы через og_balance.sh, «строгая» или «финальная» верификация."
@@ -268,6 +287,8 @@ def main():
                     help="strict=пер-тx сверка Х (последовательно). final=агрегатная сверка (до/после, можно --workers>1).")
     ap.add_argument("--workers", type=int, default=1, help="Число параллельных отправителей (только для --verify-mode final).")
     ap.add_argument("--mnemonics", default="mnemonics.txt", help="Сид-фразы U (по одной в строке)")
+    ap.add_argument("--allowed-words", default="12,24",
+                    help="Допустимые длины сид-фраз, через запятую (по умолчанию 12,24)")
     ap.add_argument("--from-index", type=int, default=0, help="Начальный индекс BIP44 (m/44'/60'/0'/0/i)")
     ap.add_argument("--to-index", type=int, default=0, help="Конечный индекс (включительно)")
     ap.add_argument("--rpc", default="https://evmrpc.0g.ai", help="RPC 0G Mainnet (и для чекера, и для отправок)")
@@ -300,14 +321,37 @@ def main():
     mode = args.mode if args.mode else prompt_mode_interactive()
     leave_native_wei = int(args.leave_native * (10 ** 18))
 
-    # Сиды (стримингом, чтобы не кушать память на больших объёмах)
+    # Разрешённые длины сид-фраз
+    allowed_word_counts = parse_allowed_words(args.allowed_words)
+
+    # Сиды: читаем, нормализуем и валидируем (с номерами строк)
     try:
-        mfile = open(args.mnemonics, "r", encoding="utf-8")
+        with open(args.mnemonics, "r", encoding="utf-8") as mfile:
+            raw_lines = mfile.readlines()
     except FileNotFoundError:
         die(f"Файл не найден: {args.mnemonics}")
-    mnems_iter = (ln.strip() for ln in mfile)
-    mnems = [l for l in mnems_iter if l and not l.startswith("#")]
-    mfile.close()
+
+    mnems: List[str] = []
+    errors: List[str] = []
+    for lineno, raw in enumerate(raw_lines, start=1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        mnorm = normalize_mnemonic(line)
+        try:
+            validate_mnemonic_length_and_checksum(mnorm, allowed_word_counts)
+        except Exception as e:
+            errors.append(f"Строка {lineno}: {e}")
+            continue
+        mnems.append(mnorm)
+
+    if errors:
+        for e in errors:
+            logging.error(e)
+        die("Найдены ошибки сид-фраз (см. выше). Исправьте входной файл и повторите.")
+
+    if not mnems:
+        die("Не найдено ни одной валидной сид-фразы после фильтрации/валидации.")
 
     # CSV заголовок
     with open(args.out_csv, "w", newline="", encoding="utf-8") as fcsv:
@@ -352,7 +396,6 @@ def main():
         logging.info(f"[FINAL] Баланс Х ДО: {x_before} wei | X={recipient}")
 
         jobs = []
-        # формируем задания
         for m_idx, m in enumerate(mnems, start=1):
             for i in range(args.from_index, args.to_index + 1):
                 jobs.append((m_idx, m, i))
@@ -361,7 +404,8 @@ def main():
 
         def worker(m_idx:int, mnem:str, i:int):
             try:
-                priv_hex, _addr = derive_eth_from_mnemonic(mnem, i)
+                # derive inside to fail early for any strange edge case
+                _priv_hex, _ = derive_eth_from_mnemonic(mnem, i)
                 sender_addr, txh, sent = send_job_final(
                     w3, recipient, mnem, i, mode, leave_native_wei,
                     args.priority_gwei, args.basefee_mult, args.wait_timeout
@@ -370,22 +414,16 @@ def main():
             except Exception as e:
                 return (m_idx, i, "-", mode, 0, "", f"FAIL: {e}")
 
-        # пул
         workers = max(1, int(args.workers))
         with ThreadPoolExecutor(max_workers=workers) as ex:
             futs = [ex.submit(worker, m_idx, m, i) for (m_idx, m, i) in jobs]
             for fut in as_completed(futs):
                 m_idx, i, sender, mode_used, sent, txh, status = fut.result()
-                if status.startswith("FAIL"):
-                    # Запишем и остановим обработку (остальные могли уже уйти — это особенность параллели)
-                    with open(args.out_csv, "a", newline="", encoding="utf-8") as fcsv:
-                        w = csv.writer(fcsv, delimiter=";")
-                        w.writerow([m_idx, i, sender, mode_used, sent, txh, status])
-                    die(f"Остановка: {status}")
-                # успех
                 with open(args.out_csv, "a", newline="", encoding="utf-8") as fcsv:
                     w = csv.writer(fcsv, delimiter=";")
                     w.writerow([m_idx, i, sender, mode_used, sent, txh, status])
+                if status.startswith("FAIL"):
+                    die(f"Остановка: {status}")
                 results.append((m_idx, i, sender, mode_used, sent, txh, status))
 
         # баланс Х после
