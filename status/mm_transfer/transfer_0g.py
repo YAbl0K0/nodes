@@ -289,6 +289,8 @@ def main():
     ap.add_argument("--mnemonics", default="mnemonics.txt", help="Сид-фразы U (по одной в строке)")
     ap.add_argument("--allowed-words", default="12,24",
                     help="Допустимые длины сид-фраз, через запятую (по умолчанию 12,24)")
+    ap.add_argument("--force-any-words", action="store_true",
+                    help="Игнорировать --allowed-words и разрешить все стандартные длины BIP39 (12,15,18,21,24)")
     ap.add_argument("--from-index", type=int, default=0, help="Начальный индекс BIP44 (m/44'/60'/0'/0/i)")
     ap.add_argument("--to-index", type=int, default=0, help="Конечный индекс (включительно)")
     ap.add_argument("--rpc", default="https://evmrpc.0g.ai", help="RPC 0G Mainnet (и для чекера, и для отправок)")
@@ -322,7 +324,10 @@ def main():
     leave_native_wei = int(args.leave_native * (10 ** 18))
 
     # Разрешённые длины сид-фраз
-    allowed_word_counts = parse_allowed_words(args.allowed_words)
+    if args.force_any_words:
+        allowed_word_counts = {12, 15, 18, 21, 24}
+    else:
+        allowed_word_counts = parse_allowed_words(args.allowed_words)
 
     # Сиды: читаем, нормализуем и валидируем (с номерами строк)
     try:
