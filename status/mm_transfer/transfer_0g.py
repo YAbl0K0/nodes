@@ -76,7 +76,9 @@ def validate_mnemonic_length_and_checksum(m: str, allowed_word_counts: Set[int],
     words = m.split(" ")
     if len(words) not in allowed_word_counts:
         raise ValueError(f"Недопустимое число слов: {len(words)} (допустимо: {sorted(allowed_word_counts)})")
-    if not args.skip_bip39_check and not Bip39MnemonicValidator(m).Validate():
+    if skip_check:
+        return
+    if not Bip39MnemonicValidator(m).Validate():
         raise ValueError("Невалидная сид-фраза (BIP39 checksum/wordlist)")
 
 def derive_eth_from_mnemonic(mnemonic: str, index: int = 0) -> Tuple[str, str]:
@@ -155,6 +157,13 @@ def eip1559_fees(w3: Web3, priority_gwei: float, base_mult: float):
     max_fee = int(base * base_mult) + int(prio)
     return {"type": 2, "maxFeePerGas": max_fee, "maxPriorityFeePerGas": int(prio)}
 
+def _send_raw_tx_hex(w3: Web3, signed) -> str:
+    # совместимость v5/v6
+    raw = getattr(signed, "raw_transaction", None) or getattr(signed, "rawTransaction", None)
+    if raw is None:
+        raise AttributeError("SignedTransaction: no raw_transaction/rawTransaction")
+    return w3.eth.send_raw_transaction(raw).hex()
+
 def send_native_all(w3: Web3, priv_hex: str, to_addr: str, leave_native_wei: int,
                     priority_gwei: float, base_mult: float) -> Tuple[str, str, int]:
     acct = w3.eth.account.from_key(bytes.fromhex(priv_hex))
@@ -175,7 +184,7 @@ def send_native_all(w3: Web3, priv_hex: str, to_addr: str, leave_native_wei: int
     }
     tx.update(fees)
     signed = w3.eth.account.sign_transaction(tx, acct.key)
-    txh = w3.eth.send_raw_transaction(signed.raw_transaction).hex()
+    txh = _send_raw_tx_hex(w3, signed)
     return sender, txh, int(amount)
 
 def send_native_fixed(w3: Web3, priv_hex: str, to_addr: str, amount_wei: int,
@@ -198,7 +207,7 @@ def send_native_fixed(w3: Web3, priv_hex: str, to_addr: str, amount_wei: int,
     }
     tx.update(fees)
     signed = w3.eth.account.sign_transaction(tx, acct.key)
-    txh = w3.eth.send_raw_transaction(signed.raw_transaction).hex()
+    txh = _send_raw_tx_hex(w3, signed)
     return sender, txh, int(amount_wei)
 
 # --------------- один прогон (strict) ----------------
@@ -289,10 +298,6 @@ def main():
     ap.add_argument("--mnemonics", default="mnemonics.txt", help="Сид-фразы U (по одной в строке)")
     ap.add_argument("--allowed-words", default="12,24",
                     help="Допустимые длины сид-фраз, через запятую (по умолчанию 12,24)")
-    ap.add_argument("--force-any-words", action="store_true",
-                    help="Игнорировать --allowed-words и разрешить все стандартные длины BIP39 (12,15,18,21,24)")
-    ap.add_argument("--skip-bip39-check", action="store_true",
-                    help="Пропустить проверку словаря/чексуммы BIP39 (использовать с осторожностью)")
     ap.add_argument("--from-index", type=int, default=0, help="Начальный индекс BIP44 (m/44'/60'/0'/0/i)")
     ap.add_argument("--to-index", type=int, default=0, help="Конечный индекс (включительно)")
     ap.add_argument("--rpc", default="https://evmrpc.0g.ai", help="RPC 0G Mainnet (и для чекера, и для отправок)")
@@ -302,10 +307,21 @@ def main():
     ap.add_argument("--wait-timeout", type=int, default=180)
     ap.add_argument("--log", default="og_transfer.log")
     ap.add_argument("--out-csv", default="og_transfer.csv")
+    # новые флаги
+    ap.add_argument("--force-any-words", action="store_true",
+                    help="Игнорировать --allowed-words и разрешить все стандартные длины BIP39 (12,15,18,21,24)")
+    ap.add_argument("--skip-bip39-check", action="store_true",
+                    help="Пропустить проверку словаря/чексуммы BIP39 (использовать с осторожностью)")
+    ap.add_argument("--balance-sh", default="./og_balance.sh",
+                    help="Путь к bash-скрипту для подсчёта балансов (по умолчанию ./og_balance.sh)")
     args = ap.parse_args()
 
+    # применим путь к баланс-скрипту
+    global BAL_SH
+    BAL_SH = args.balance_sh
+
     if not os.path.exists(BAL_SH):
-        die(f"Не найден {BAL_SH}. Положи рядом и сделай исполняемым: chmod +x og_balance.sh")
+        die(f"Не найден {BAL_SH}. Сделай исполняемым: chmod +x {os.path.basename(BAL_SH)}")
 
     setup_logger(args.log)
 
