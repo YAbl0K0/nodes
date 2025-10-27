@@ -175,7 +175,7 @@ def send_native_all(w3: Web3, priv_hex: str, to_addr: str, leave_native_wei: int
     }
     tx.update(fees)
     signed = w3.eth.account.sign_transaction(tx, acct.key)
-    txh = w3.eth.send_raw_transaction(signed.rawTransaction).hex()
+    txh = w3.eth.send_raw_transaction(signed.raw_transaction).hex()
     return sender, txh, int(amount)
 
 def send_native_fixed(w3: Web3, priv_hex: str, to_addr: str, amount_wei: int,
@@ -198,7 +198,7 @@ def send_native_fixed(w3: Web3, priv_hex: str, to_addr: str, amount_wei: int,
     }
     tx.update(fees)
     signed = w3.eth.account.sign_transaction(tx, acct.key)
-    txh = w3.eth.send_raw_transaction(signed.rawTransaction).hex()
+    txh = w3.eth.send_raw_transaction(signed.raw_transaction).hex()
     return sender, txh, int(amount_wei)
 
 # --------------- один прогон (strict) ----------------
