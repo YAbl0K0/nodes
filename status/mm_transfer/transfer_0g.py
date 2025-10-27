@@ -72,11 +72,11 @@ def normalize_mnemonic(m: str) -> str:
     # убираем лишние пробелы, табы, множественные пробелы
     return " ".join(m.strip().split())
 
-def validate_mnemonic_length_and_checksum(m: str, allowed_word_counts: Set[int]) -> None:
+def validate_mnemonic_length_and_checksum(m: str, allowed_word_counts: Set[int], skip_check: bool = False) -> None:
     words = m.split(" ")
     if len(words) not in allowed_word_counts:
         raise ValueError(f"Недопустимое число слов: {len(words)} (допустимо: {sorted(allowed_word_counts)})")
-    if not Bip39MnemonicValidator(m).Validate():
+    if not args.skip_bip39_check and not Bip39MnemonicValidator(m).Validate():
         raise ValueError("Невалидная сид-фраза (BIP39 checksum/wordlist)")
 
 def derive_eth_from_mnemonic(mnemonic: str, index: int = 0) -> Tuple[str, str]:
@@ -291,6 +291,8 @@ def main():
                     help="Допустимые длины сид-фраз, через запятую (по умолчанию 12,24)")
     ap.add_argument("--force-any-words", action="store_true",
                     help="Игнорировать --allowed-words и разрешить все стандартные длины BIP39 (12,15,18,21,24)")
+    ap.add_argument("--skip-bip39-check", action="store_true",
+                    help="Пропустить проверку словаря/чексуммы BIP39 (использовать с осторожностью)")
     ap.add_argument("--from-index", type=int, default=0, help="Начальный индекс BIP44 (m/44'/60'/0'/0/i)")
     ap.add_argument("--to-index", type=int, default=0, help="Конечный индекс (включительно)")
     ap.add_argument("--rpc", default="https://evmrpc.0g.ai", help="RPC 0G Mainnet (и для чекера, и для отправок)")
@@ -344,7 +346,7 @@ def main():
             continue
         mnorm = normalize_mnemonic(line)
         try:
-            validate_mnemonic_length_and_checksum(mnorm, allowed_word_counts)
+            validate_mnemonic_length_and_checksum(mnorm, allowed_word_counts, args.skip_bip39_check)
         except Exception as e:
             errors.append(f"Строка {lineno}: {e}")
             continue
